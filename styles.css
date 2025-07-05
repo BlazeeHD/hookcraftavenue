@@ -23,7 +23,7 @@
     }
     
     .navbar .logo {
-        font-family: 'Pacifico', cursive;
+        font-family: 'ARIAL';
         font-size: 1.8rem;
         color: #333;
     }
@@ -65,7 +65,7 @@
     }
     
     .hero-content h1 {
-      font-family: 'Pacifico', cursive;
+      font-family: 'ARIAL';
       font-size: 2.5rem;
       margin-bottom: 10px;
     }
