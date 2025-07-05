@@ -4,102 +4,167 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Flower Shop</title>
-  <link rel="stylesheet" href="styles.css">
+  <!-- Bootstrap CSS CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Open+Sans&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css"><!-- Optional: keep your custom styles -->
 </head>
 <body>
-    <nav class="navbar">
-        <div class="logo">Hookcraft Avenue</div>
-        <ul class="nav-links">
-          <li><a href="#">Home</a></li>
-          <li><a href="shop.html">Shop</a></li>
-          <li><a href="about.html">About</a></li>
-          <li><a href="#">Gallery</a></li>
-          <li><a href="#">Contact</a></li>
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container">
+      <a class="navbar-brand fw-bold" style="font-family: 'Pacifico', cursive;" href="#">HookcraftAvenue</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link active" href="#">Home</a></li>
+          <li class="nav-item"><a class="nav-link" href="shop.html">Shop</a></li>
+          <li class="nav-item"><a class="nav-link" href="about.html">About</a></li>
+          <li class="nav-item"><a class="nav-link" href="#">Gallery</a></li>
+          <li class="nav-item"><a class="nav-link" href="#">Contact</a></li>
         </ul>
-      </nav>
-      
+      </div>
+    </div>
+  </nav>
 
-      <section class="hero">
-        <div class="hero-content">
-          <h1>Elevate your moments with our handcrafted floral creations</h1>
-          <p>Celebrate Beauty, one petal at a time.</p>
-          <button class="shop-now">Shop Now</button>
+  <!-- Hero Section -->
+  <section class="py-5 bg-light">
+    <div class="container">
+      <div class="row align-items-center">
+        <div class="col-md-6 text-center text-md-start">
+          <h1 class="display-5 fw-bold">Elevate your moments with our handcrafted floral creations</h1>
+          <p class="lead">Celebrate Beauty, one petal at a time.</p>
+          <a href="shop.html" class="btn btn-success btn-lg mt-3">Shop Now</a>
         </div>
-        <img src="images/hero-image.png" alt="Flower Hero" class="hero-img">
-      </section>
-      
-
-  <section class="categories">
-    <h1>Shop by Category</h1>
-    <div class="category-grid">
-      <div class="category-item">
-        <img src="images/birthday.jpg" alt="Birthday Bouquet">
-        <h3>Birthday Bouquets</h3>
-      </div>
-      <div class="category-item">
-        <img src="images/casual.jpg" alt="Casual Bouquet">
-        <h3>Casual Bouquets</h3>
-      </div>
-      <div class="category-item">
-        <img src="images/tiny.jpg" alt="Tiny Bouquets">
-        <h3>Tiny Bouquets</h3>
+        <div class="col-md-6 text-center">
+          <img src="images/hero-image.png" alt="Flower Hero" class="img-fluid hero-img">
+        </div>
       </div>
     </div>
   </section>
 
-  <section class="about">
-   
-    <div class="about-content">
-      <div class="about-text">
-        <h2>About Us</h2>
-        <p>
-          At Hookcraft Avenue, we are passionate about delivering freshly picked flowers, carefully handcrafted into beautiful arrangements that bring joy to every occasion. We take pride in our eco-friendly practices, ensuring that each bouquet is both stunning and sustainable. Our team is dedicated to providing custom orders tailored to your special moments, because we believe that every flower tells a story — and your story deserves the perfect bloom.
-        </p>
+  <!-- Categories Section -->
+  <section class="py-5">
+    <div class="container">
+      <h2 class="text-center mb-4">Shop by Category</h2>
+      <div class="row g-4">
+        <div class="col-md-4">
+          <div class="card h-100 text-center">
+            <img src="images/birthday.jpg" class="card-img-top" alt="Birthday Bouquet">
+            <div class="card-body">
+              <h5 class="card-title">Birthday Bouquets</h5>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card h-100 text-center">
+            <img src="images/casual.jpg" class="card-img-top" alt="Casual Bouquet">
+            <div class="card-body">
+              <h5 class="card-title">Casual Bouquets</h5>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card h-100 text-center">
+            <img src="images/tiny.jpg" class="card-img-top" alt="Tiny Bouquets">
+            <div class="card-body">
+              <h5 class="card-title">Tiny Bouquets</h5>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="about-image">
-        <img src="images/about-flower.jpg" alt="Flower 1" class="img-top">
-        <img src="images/about-flower1.jpg" alt="Flower 2" class="img-bottom">
-      </div>      
-    </div>
-  </section>
-  
-  
-
-  <section class="gallery">
-    <h2>Gallery</h2>
-    <div class="gallery-grid">
-      <img src="images/gallery1.jpg " alt="Gallery 1">
-      <img src="images/gallery2.jpg" alt="Gallery 2">
-      <img src="images/gallery3.png" alt="Gallery 3">
-      <img src="images/gallery4.png" alt="Gallery 4">
-      <img src="images/gallery5.png" alt="Gallery 5">
-      <img src="gallery6.png" alt="Gallery 6">
-      <img src="gallery7.png" alt="Gallery 7">
-      <img src="gallery8.png" alt="Gallery 8">
-     
     </div>
   </section>
 
-  <section class="customize">
-    <h2>Customize Your Own</h2>
-    <div class="customize-grid">
-      <img src="custom1.png" alt="Customize 1">
-      <img src="custom2.png" alt="Customize 2">
-      <img src="custom3.png" alt="Customize 3">
+  <!-- About Section -->
+  <section class="py-5 bg-light">
+    <div class="container">
+      <div class="row align-items-center">
+        <div class="col-md-6">
+          <h2>About Us</h2>
+          <p>
+            At Hookcraft Avenue, we are passionate about delivering freshly picked flowers, carefully handcrafted into beautiful arrangements that bring joy to every occasion. We take pride in our eco-friendly practices, ensuring that each bouquet is both stunning and sustainable. Our team is dedicated to providing custom orders tailored to your special moments, because we believe that every flower tells a story — and your story deserves the perfect bloom.
+          </p>
+        </div>
+        <div class="col-md-6">
+          <div class="d-flex flex-column align-items-center">
+            <img src="images/about-flower.jpg" alt="Flower 1" class="img-fluid mb-3" style="max-width: 70%;">
+            <img src="images/about-flower1.jpg" alt="Flower 2" class="img-fluid" style="max-width: 70%;">
+          </div>
+        </div>
+      </div>
     </div>
-    <button class="customize-btn">Customize Now</button>
   </section>
 
-  <footer class="footer">
-    <nav>
-      <a href="#">Home</a>
-      <a href="shop.html">Shop</a>
-      <a href="about.html">About</a>
-      <a href="#">Gallery</a>
-      <a href="#">Contact</a>
-    </nav>
+  <!-- Gallery Section -->
+  <section class="py-5">
+    <div class="container">
+      <h2 class="text-center mb-4">Gallery</h2>
+      <div class="row g-3">
+        <div class="col-6 col-md-3">
+          <img src="images/gallery1.jpg" alt="Gallery 1" class="img-fluid rounded">
+        </div>
+        <div class="col-6 col-md-3">
+          <img src="images/gallery2.jpg" alt="Gallery 2" class="img-fluid rounded">
+        </div>
+        <div class="col-6 col-md-3">
+          <img src="images/gallery3.png" alt="Gallery 3" class="img-fluid rounded">
+        </div>
+        <div class="col-6 col-md-3">
+          <img src="images/gallery4.png" alt="Gallery 4" class="img-fluid rounded">
+        </div>
+        <div class="col-6 col-md-3">
+          <img src="images/gallery5.png" alt="Gallery 5" class="img-fluid rounded">
+        </div>
+        <div class="col-6 col-md-3">
+          <img src="gallery6.png" alt="Gallery 6" class="img-fluid rounded">
+        </div>
+        <div class="col-6 col-md-3">
+          <img src="gallery7.png" alt="Gallery 7" class="img-fluid rounded">
+        </div>
+        <div class="col-6 col-md-3">
+          <img src="gallery8.png" alt="Gallery 8" class="img-fluid rounded">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Customize Section -->
+  <section class="py-5 bg-light">
+    <div class="container text-center">
+      <h2>Customize Your Own</h2>
+      <div class="row justify-content-center my-4">
+        <div class="col-6 col-md-4 col-lg-3">
+          <img src="custom1.png" alt="Customize 1" class="img-fluid rounded mb-2">
+        </div>
+        <div class="col-6 col-md-4 col-lg-3">
+          <img src="custom2.png" alt="Customize 2" class="img-fluid rounded mb-2">
+        </div>
+        <div class="col-6 col-md-4 col-lg-3">
+          <img src="custom3.png" alt="Customize 3" class="img-fluid rounded mb-2">
+        </div>
+      </div>
+      <a href="#" class="btn btn-primary btn-lg">Customize Now</a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer bg-dark text-white py-4">
+    <div class="container text-center">
+      <nav class="mb-2">
+        <a href="#" class="text-white mx-2 text-decoration-none">Home</a>
+        <a href="shop.html" class="text-white mx-2 text-decoration-none">Shop</a>
+        <a href="about.html" class="text-white mx-2 text-decoration-none">About</a>
+        <a href="#" class="text-white mx-2 text-decoration-none">Gallery</a>
+        <a href="#" class="text-white mx-2 text-decoration-none">Contact</a>
+      </nav>
+      <small>&copy; 2025 Hookcraft Avenue. All rights reserved.</small>
+    </div>
   </footer>
 
+  <!-- Bootstrap JS Bundle CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
