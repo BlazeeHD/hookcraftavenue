@@ -5,17 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Flower Shop - Shop</title>
 
-  <link rel="stylesheet" href="styles.css">
+  <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Open+Sans&display=swap" rel="stylesheet">
-  
+  <link rel="stylesheet" href="styles.css">
+  <!-- Custom Styles -->
   <style>
     body {
       font-family: 'Open Sans', sans-serif;
+      background-color: #fff6f9;
     }
 
     .navbar-brand {
-      font-family: 'Pacifico', cursive;
+      font-family: 'Arial', sans-serif;
     }
 
     .sidebar h2, .sidebar h3 {
@@ -28,6 +32,14 @@
       padding: 10px;
       text-align: center;
       height: 100%;
+      background-color: #fff;
+      transition: transform 0.3s;
+      cursor: pointer;
+    }
+
+    .product-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
 
     .product-card img {
@@ -36,25 +48,46 @@
       border-radius: 5px;
     }
 
-    
+    .footer {
+      background-color: #ffcad4;
+      padding: 20px 0;
+    }
+
+    .footer p {
+      margin: 0;
+      font-size: 0.9rem;
+      color: #333;
+    }
+
+    .list-group-item a {
+      text-decoration: none;
+      color: #000;
+      display: block;
+    }
+
+    .list-group-item a:hover {
+      color: #ff6fa4;
+    }
   </style>
 </head>
 <body>
 
   <!-- Navbar -->
-  <nav class="navbar navbar-expand-lg navbar-light bg-light px-3">
-    <a class="navbar-brand" href="#">Hookcraft Avenue</a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
-      <ul class="navbar-nav">
-        <li class="nav-item"><a class="nav-link" href="index.html">Home</a></li>
-        <li class="nav-item"><a class="nav-link" href="shop.html">Shop</a></li>
-        <li class="nav-item"><a class="nav-link" href="about.html">About</a></li>
-        <li class="nav-item"><a class="nav-link" href="#">Gallery</a></li>
-        <li class="nav-item"><a class="nav-link" href="#">Contact</a></li>
-      </ul>
+  <nav class="navbar navbar-expand-lg" style="background-color: #ffcad4;">
+    <div class="container">
+      <a class="navbar-brand" href="#">Hookcraft Avenue</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+        <ul class="navbar-nav">
+          <li class="nav-item"><a class="nav-link" href="index.html">Home</a></li>
+          <li class="nav-item"><a class="nav-link active" href="#">Shop</a></li>
+          <li class="nav-item"><a class="nav-link" href="about.html">About</a></li>
+          <li class="nav-item"><a class="nav-link" href="#">Gallery</a></li>
+          <li class="nav-item"><a class="nav-link" href="#">Contact</a></li>
+        </ul>
+      </div>
     </div>
   </nav>
 
@@ -66,12 +99,12 @@
       <aside class="col-md-3 sidebar">
         <h2>Categories</h2>
         <ul class="list-group mb-4">
-          <li class="list-group-item"><a onclick="filterProducts('all')">All</a></li>
-          <li class="list-group-item"><a onclick="filterProducts('mini')">Fancy Mini Flower</a></li>
-          <li class="list-group-item"><a onclick="filterProducts('giant')">Giant Flower</a></li>
-          <li class="list-group-item"><a onclick="filterProducts('choco')">Chocolate Flower</a></li>
-          <li class="list-group-item"><a onclick="filterProducts('bouquet')">Flower Bouquet</a></li>
-          <li class="list-group-item"><a onclick="filterProducts('accessories')">Accessories</a></li>
+          <li class="list-group-item"><a href="#" onclick="filterProducts('all')">All</a></li>
+          <li class="list-group-item"><a href="#" onclick="filterProducts('mini')">Fancy Mini Flower</a></li>
+          <li class="list-group-item"><a href="#" onclick="filterProducts('giant')">Giant Flower</a></li>
+          <li class="list-group-item"><a href="#" onclick="filterProducts('choco')">Chocolate Flower</a></li>
+          <li class="list-group-item"><a href="#" onclick="filterProducts('bouquet')">Flower Bouquet</a></li>
+          <li class="list-group-item"><a href="#" onclick="filterProducts('accessories')">Accessories</a></li>
         </ul>
 
         <div class="filter-price">
@@ -87,59 +120,41 @@
       <!-- Products -->
       <section class="col-md-9">
         <div class="row g-4" id="product-list">
-          <!-- Product Card -->
-          <div class="col-sm-6 col-md-4 product-item" data-category="mini">
+          <!-- Product Items -->
+          <div class="col-sm-6 col-md-4 product-item" data-category="mini" data-name="Fancy Mini Flower" data-price="₱140.00" data-image="images/flower1.jpg">
             <div class="product-card">
               <img src="images/flower1.jpg" alt="Flower 1">
               <p>Price: ₱140.00</p>
             </div>
           </div>
-          <div class="col-sm-6 col-md-4 product-item" data-category="giant">
+          <div class="col-sm-6 col-md-4 product-item" data-category="giant" data-name="Giant Flower" data-price="₱199.00" data-image="flower2.png">
             <div class="product-card">
               <img src="flower2.png" alt="Flower 2">
-              <p>Price</p>
+              <p>Price: ₱199.00</p>
             </div>
           </div>
-          <div class="col-sm-6 col-md-4 product-item" data-category="choco">
+          <div class="col-sm-6 col-md-4 product-item" data-category="choco" data-name="Chocolate Flower" data-price="₱150.00" data-image="flower3.png">
             <div class="product-card">
               <img src="flower3.png" alt="Flower 3">
-              <p>Price</p>
+              <p>Price: ₱150.00</p>
             </div>
           </div>
-          <div class="col-sm-6 col-md-4 product-item" data-category="bouquet">
+          <div class="col-sm-6 col-md-4 product-item" data-category="bouquet" data-name="Flower Bouquet" data-price="₱200.00" data-image="images/flower4.jpg">
             <div class="product-card">
               <img src="images/flower4.jpg" alt="Flower 4">
-              <p>Price: ₱140.00</p>
+              <p>Price: ₱200.00</p>
             </div>
           </div>
-          <div class="col-sm-6 col-md-4 product-item" data-category="accessories">
+          <div class="col-sm-6 col-md-4 product-item" data-category="accessories" data-name="Accessory Flower" data-price="₱90.00" data-image="flower5.png">
             <div class="product-card">
               <img src="flower5.png" alt="Flower 5">
-              <p>Price</p>
+              <p>Price: ₱90.00</p>
             </div>
           </div>
-          <div class="col-sm-6 col-md-4 product-item" data-category="mini">
+          <div class="col-sm-6 col-md-4 product-item" data-category="mini" data-name="Fancy Mini Flower 2" data-price="₱140.00" data-image="flower6.png">
             <div class="product-card">
               <img src="flower6.png" alt="Flower 6">
               <p>Price: ₱140.00</p>
-            </div>
-          </div>
-          <div class="col-sm-6 col-md-4 product-item" data-category="giant">
-            <div class="product-card">
-              <img src="images/flower7.jpg" alt="Flower 7">
-              <p>Price: ₱140.00</p>
-            </div>
-          </div>
-          <div class="col-sm-6 col-md-4 product-item" data-category="bouquet">
-            <div class="product-card">
-              <img src="flower8.png" alt="Flower 8">
-              <p>Price</p>
-            </div>
-          </div>
-          <div class="col-sm-6 col-md-4 product-item" data-category="choco">
-            <div class="product-card">
-              <img src="flower9.png" alt="Flower 9">
-              <p>Price</p>
             </div>
           </div>
         </div>
@@ -147,31 +162,63 @@
     </div>
   </div>
 
-  <!-- Footer -->
-  <footer class="footer mt-5">
-    <div class="container">
-      <div class="footer-content">
-        <p>&copy; 2025 Hookcraft Avenue. All rights reserved.</p>
-
+  <!-- Product Modal -->
+  <div class="modal fade" id="productModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalProductName">Product Name</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body text-center">
+          <img id="modalProductImage" src="" class="img-fluid mb-3" alt="Product Image" style="max-height: 300px;">
+          <p id="modalProductPrice" class="fw-bold fs-5"></p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
       </div>
+    </div>
+  </div>
 
+  <!-- Footer -->
+  <footer class="footer mt-5 text-center">
+    <p>&copy; 2025 Hookcraft Avenue. All rights reserved.</p>
   </footer>
 
   <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
-  <!-- Filtering Script -->
+  <!-- Script -->
   <script>
     function filterProducts(category) {
       const products = document.querySelectorAll('.product-item');
       products.forEach(product => {
-        if (category === 'all' || product.getAttribute('data-category') === category) {
+        if (category === 'all' || product.dataset.category === category) {
           product.style.display = 'block';
         } else {
           product.style.display = 'none';
         }
       });
     }
+
+    // Modal Setup
+    const modal = new bootstrap.Modal(document.getElementById('productModal'));
+    const productItems = document.querySelectorAll('.product-item');
+
+    productItems.forEach(item => {
+      item.addEventListener('click', () => {
+        const name = item.dataset.name;
+        const price = item.dataset.price;
+        const image = item.dataset.image;
+
+        document.getElementById('modalProductName').innerText = name;
+        document.getElementById('modalProductPrice').innerText = price;
+        document.getElementById('modalProductImage').src = image;
+
+        modal.show();
+      });
+    });
   </script>
 </body>
 </html>
