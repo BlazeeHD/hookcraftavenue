@@ -8,48 +8,28 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Flower Shop - Shop</title>
-
-  <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-
-  <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Open+Sans&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="images/logo.jpg" type="image/png">
   <style>
     body {
       font-family: 'Open Sans', sans-serif;
       background-color: #fff6f9;
     }
 
-    .navbar-brand {
-      font-family: 'Arial', sans-serif;
-    }
-
-    .product-card {
-      border: 1px solid #ddd;
-      border-radius: 10px;
-      padding: 10px;
-      text-align: center;
-      background-color: #fff;
-      transition: transform 0.3s;
-      cursor: pointer;
-      height: 100%;
-    }
-
-    .product-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    }
-
-    .product-card img {
-      max-width: 100%;
-      height: auto;
-      border-radius: 5px;
-    }
-
-    .footer {
+    .navbar {
       background-color: #ffcad4;
-      padding: 20px 0;
+    }
+
+    .navbar-brand {
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .sidebar h2 {
+      font-size: 1.3rem;
+      margin-top: 20px;
     }
 
     .list-group-item a {
@@ -62,15 +42,76 @@
       color: #ff6fa4;
     }
 
+    .product-card {
+      background: #fff;
+      padding: 15px;
+      border-radius: 10px;
+      text-align: center;
+      transition: transform 0.3s, box-shadow 0.3s;
+      position: relative;
+      overflow: hidden;
+      height: 100%;
+      cursor: pointer;
+    }
+
+    .product-card img {
+      width: 100%;
+      height: auto;
+      transition: transform 0.3s ease, filter 0.3s ease;
+      border-radius: 10px;
+      display: block;
+    }
+
+    .product-price {
+      position: absolute;
+      bottom: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255, 111, 164, 0.8);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 10px;
+      font-weight: bold;
+      font-size: 1.2rem;
+      opacity: 0;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    .add-to-cart-btn {
+      position: absolute;
+      bottom: 15px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #ff6fa4;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    .product-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .product-card:hover img {
+      transform: scale(1.05);
+      filter: brightness(1.1);
+    }
+
+    .product-card:hover .product-price,
+    .product-card:hover .add-to-cart-btn {
+      opacity: 1;
+      transform: translateX(-50%) translateY(-5px);
+    }
+
     @media (max-width: 767.98px) {
-      .search-cart-bar {
-        flex-direction: column;
-        align-items: stretch;
-      }
-      .search-cart-bar .form-control,
-      .search-cart-bar .btn {
-        width: 100%;
-        margin-top: 8px;
+      .sidebar {
+        margin-top: 20px;
       }
     }
   </style>
@@ -80,19 +121,14 @@
 <!-- Navbar -->
 <nav class="navbar navbar-expand-lg" style="background-color: #ffcad4;">
   <div class="container">
-    <a class="navbar-brand logo" href="#" style="font-family: 'ARIAL'; color: #333;">HookcraftAvenue</a>
-    
-    <!-- Hamburger icon -->
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-      aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+    <a class="navbar-brand" href="#" style="color: #333;">HookcraftAvenue</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
       <span class="navbar-toggler-icon"></span>
     </button>
-
-    <!-- Links -->
     <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
       <ul class="navbar-nav nav-links">
-        <li class="nav-item"><a class="nav-link" href="index.html">Home</a></li>
-        <li class="nav-item"><a class="nav-link" href="shop.html">Shop</a></li>
+        <li class="nav-item"><a class="nav-link" href="#">Home</a></li>
+        <li class="nav-item"><a class="nav-link" href="#">Shop</a></li>
         <li class="nav-item"><a class="nav-link" href="about.html">About</a></li>
         <li class="nav-item"><a class="nav-link" href="#">Gallery</a></li>
         <li class="nav-item"><a class="nav-link" href="#">Contact</a></li>
@@ -107,179 +143,91 @@
   <button class="btn btn-dark" onclick="showCart()">🛒 Cart (<span id="cartCount">0</span>)</button>
 </div>
 
-<!-- Main Content -->
-<div class="container-fluid mt-4">
-  <div class="row">
-    <!-- Sidebar -->
-    <aside class="col-md-3 sidebar">
-      <h4>Categories</h4>
-      <ul class="list-group mb-4">
-        <li class="list-group-item"><a href="#" onclick="filterProducts('all')">All</a></li>
-        <li class="list-group-item"><a href="#" onclick="filterProducts('mini')">Fancy Mini Flower</a></li>
-        <li class="list-group-item"><a href="#" onclick="filterProducts('giant')">Giant Flower</a></li>
-        <li class="list-group-item"><a href="#" onclick="filterProducts('choco')">Chocolate Flower</a></li>
-        <li class="list-group-item"><a href="#" onclick="filterProducts('bouquet')">Flower Bouquet</a></li>
-        <li class="list-group-item"><a href="#" onclick="filterProducts('accessories')">Accessories</a></li>
-      </ul>
-    </aside>
+  <!-- Main Content -->
+  <div class="container-fluid mt-4">
+    <div class="row">
 
-    <!-- Product List -->
-    <section class="col-md-9">
-      <div class="row g-4" id="product-list">
-        <!-- Sample Products -->
-        <div class="col-sm-6 col-md-4 product-item" data-category="mini" data-name="Fancy Mini Flower" data-price="140" data-image="images/flower1.jpg">
-          <div class="product-card">
-            <img src="images/flower1.jpg" alt="Flower 1">
-            <p class="fw-bold">₱140.00</p>
-            
+      <!-- Sidebar Filters -->
+      <aside class="col-md-3 sidebar">
+        <h2>Categories</h2>
+        <ul class="list-group mb-4">
+          <li class="list-group-item"><a href="#" onclick="filterProducts('all')">All</a></li>
+          <li class="list-group-item"><a href="#" onclick="filterProducts('mini')">Fancy Mini Flower</a></li>
+          <li class="list-group-item"><a href="#" onclick="filterProducts('giant')">Giant Flower</a></li>
+          <li class="list-group-item"><a href="#" onclick="filterProducts('choco')">Chocolate Flower</a></li>
+          <li class="list-group-item"><a href="#" onclick="filterProducts('bouquet')">Flower Bouquet</a></li>
+          <li class="list-group-item"><a href="#" onclick="filterProducts('accessories')">Accessories</a></li>
+        </ul>
+
+        <div class="filter-price">
+          <h3>Filter by Price</h3>
+          <input type="range" class="form-range" min="20" max="1000" value="45">
+          <div class="d-flex justify-content-between">
+            <span>₱70</span>
+            <span>₱1000</span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Product Grid -->
+      <section class="col-md-9">
+        <div class="row g-4" id="product-list">
+          <!-- Product Item -->
+          <div class="col-sm-6 col-md-4 product-item" data-category="mini" data-name="Fancy Mini Flower" data-price="140" data-image="images/flower1.jpg">
+            <div class="product-card">
+              <img src="images/flower1.jpg" alt="Flower 1">
+              <p class="product-price">₱140.00</p>
+              <button class="add-to-cart-btn" onclick="addToCart(event, this.parentElement.parentElement)">Add to Cart</button>
+            </div>
           </div>
         </div>
         <div class="col-sm-6 col-md-4 product-item" data-category="giant" data-name="Giant Flower" data-price="199" data-image="flower2.png">
           <div class="product-card">
-            <img src="images/gallery6.png" alt="Flower 2">
+            <img src="flower2.png" alt="Flower 2">
             <p class="fw-bold">₱199.00</p>
           </div>
-        </div>
-        <div class="col-sm-6 col-md-4 product-item" data-category="bouquet" data-name="Flower Bouquet" data-price="200" data-image="images/flower4.jpg">
-          <div class="product-card">
-            <img src="images/flower4.jpg" alt="Flower 4">
-            <p class="fw-bold">₱200.00</p>
+
+          <div class="col-sm-6 col-md-4 product-item" data-category="bouquet" data-name="Flower Bouquet" data-price="200" data-image="images/flower3.jpg">
+            <div class="product-card">
+              <img src="images/flower3.jpg" alt="Flower 3">
+              <p class="product-price">₱200.00</p>
+              <button class="add-to-cart-btn" onclick="addToCart(event, this.parentElement.parentElement)">Add to Cart</button>
+            </div>
           </div>
+          <!-- Add more products as needed -->
         </div>
-        
-      </div>
-    </section>
-  </div>
-</div>
-
-<!-- Product Modal -->
-<div class="modal fade" id="productModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content text-center">
-      <div class="modal-header">
-        <h5 class="modal-title" id="modalProductName"></h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <img id="modalProductImage" src="" class="img-fluid mb-3" alt="Product Image" style="max-height: 300px;">
-        <p id="modalProductPrice" class="fw-bold fs-5"></p>
-        <button class="btn btn-success" onclick="addToCart()">Add to Cart</button>
-      </div>
+      </section>
     </div>
   </div>
-</div>
 
-<!-- Cart Modal -->
-<div class="modal fade" id="cartModal" tabindex="-1">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Shopping Cart</h5>
-        <button class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <table class="table text-center">
-          <thead>
-            <tr><th>Product</th><th>Qty</th><th>Price</th><th>Action</th></tr>
-          </thead>
-          <tbody id="cartItems"></tbody>
-        </table>
-        <h5 class="text-end">Total: ₱<span id="cartTotal">0</span></h5>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-primary" onclick="checkout()">Checkout</button>
-      </div>
-    </div>
-  </div>
-</div>
+  <!-- Footer -->
+  <footer class="footer mt-5 text-center">
+    <p>&copy; 2025 Hookcraft Avenue. All rights reserved.</p>
+  </footer>
 
-<!-- Footer -->
-<footer class="footer mt-5 text-center">
-  <p>&copy; 2025 Hookcraft Avenue. All rights reserved.</p>
-</footer>
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
-<!-- Scripts -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-  let cart = [];
-  let selectedProduct = {};
-  const modal = new bootstrap.Modal(document.getElementById('productModal'));
-  const cartModal = new bootstrap.Modal(document.getElementById('cartModal'));
+  <!-- Filtering Script -->
+  <script>
+    function filterProducts(category) {
+      const products = document.querySelectorAll('.product-item');
+      products.forEach(product => {
+        if (category === 'all' || product.dataset.category === category) {
+          product.style.display = 'block';
+        } else {
+          product.style.display = 'none';
+        }
+      });
+    }
 
-  document.querySelectorAll('.product-item').forEach(item => {
-    item.addEventListener('click', () => {
-      selectedProduct = {
-        name: item.dataset.name,
-        price: parseFloat(item.dataset.price),
-        image: item.dataset.image
-      };
-      document.getElementById('modalProductName').innerText = selectedProduct.name;
-      document.getElementById('modalProductPrice').innerText = `₱${selectedProduct.price.toFixed(2)}`;
-      document.getElementById('modalProductImage').src = selectedProduct.image;
-      modal.show();
-    });
-  });
+    function addToCart(event, card) {
+      event.stopPropagation();
+      const name = card.dataset.name;
+      const price = card.dataset.price;
+      alert(`Added "${name}" to cart for ₱${price}`);
+    }
+  </script>
 
-  function addToCart() {
-    const existing = cart.find(p => p.name === selectedProduct.name);
-    if (existing) existing.qty++;
-    else cart.push({ ...selectedProduct, qty: 1 });
-    updateCart();
-    modal.hide();
-  }
-
-  function updateCart() {
-    const cartItems = document.getElementById('cartItems');
-    cartItems.innerHTML = '';
-    let total = 0;
-    cart.forEach((item, index) => {
-      total += item.qty * item.price;
-      cartItems.innerHTML += `
-        <tr>
-          <td>${item.name}</td>
-          <td><input type="number" min="1" value="${item.qty}" onchange="changeQty(${index}, this.value)" class="form-control" style="width: 60px;"></td>
-          <td>₱${(item.qty * item.price).toFixed(2)}</td>
-          <td><button class="btn btn-sm btn-danger" onclick="removeFromCart(${index})">Remove</button></td>
-        </tr>`;
-    });
-    document.getElementById('cartCount').innerText = cart.length;
-    document.getElementById('cartTotal').innerText = total.toFixed(2);
-  }
-
-  function changeQty(index, qty) {
-    cart[index].qty = parseInt(qty);
-    updateCart();
-  }
-
-  function removeFromCart(index) {
-    cart.splice(index, 1);
-    updateCart();
-  }
-
-  function showCart() {
-    updateCart();
-    cartModal.show();
-  }
-
-  function checkout() {
-    alert('Checkout complete! Thank you.');
-    cart = [];
-    updateCart();
-    cartModal.hide();
-  }
-
-  function filterProducts(category) {
-    document.querySelectorAll('.product-item').forEach(item => {
-      item.style.display = (category === 'all' || item.dataset.category === category) ? 'block' : 'none';
-    });
-  }
-
-  document.getElementById('searchInput').addEventListener('input', function () {
-    const keyword = this.value.toLowerCase();
-    document.querySelectorAll('.product-item').forEach(item => {
-      item.style.display = item.dataset.name.toLowerCase().includes(keyword) ? 'block' : 'none';
-    });
-  });
-</script>
 </body>
 </html>

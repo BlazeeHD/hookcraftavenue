@@ -1,32 +1,213 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>About Us - Flower Shop</title>
-  <link rel="stylesheet" href="styles.css">
-  <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Open+Sans&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Flower Shop - About</title>
+  <link rel="icon" href="images/logo.jpg" type="image/png">
+
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- AOS CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css">
+  <!-- Custom CSS -->
+  <style>
+    :root {
+      --main-font-size: 20px;
+      --heading-font-size: 2.7rem;
+      --section-title-size: 3.5rem;
+    }
+
+    body {
+      font-size: var(--main-font-size);
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    h1.section-title {
+      font-size: var(--section-title-size);
+      font-weight: bold;
+      margin-top: 2rem;
+      margin-bottom: 2rem;
+    }
+
+    h2 {
+      font-size: var(--heading-font-size);
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+
+    p {
+      font-size: 1.25rem;
+      line-height: 1.6;
+    }
+
+    /* Back to top button */
+    #backToTopBtn {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      z-index: 100;
+      display: none;
+      background-color: #d63384;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      font-size: 24px;
+      cursor: pointer;
+    }
+
+    /* Enlarged image settings */
+    .about-gallery img,
+    .about-gallery-grid img {
+      width: 100%;
+      max-width: 400px;
+      height: 300px;
+      object-fit: cover;
+      border-radius: 12px;
+      margin: 10px;
+      transition: transform 0.3s ease-in-out;
+    }
+
+    .about-gallery,
+    .about-gallery-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1rem;
+    }
+
+    .about-block {
+      gap: 2rem;
+      margin-top: 40px;
+      margin-bottom: 40px;
+    }
+
+    .about-text {
+      flex: 1;
+      min-width: 300px;
+    }
+
+    .about-gallery {
+      flex: 1;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .about-gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+      max-width: 1200px;
+      margin: 1.5rem auto;
+    }
+
+    .about-gallery-grid img:hover {
+      transform: scale(1.03);
+    }
+
+    .about-block.reverse {
+      flex-direction: row-reverse;
+    }
+
+    .testimonials {
+      background-color: #f8f9fa;
+      padding: 60px 20px;
+      text-align: center;
+    }
+
+    .testimonial-card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 0 12px rgba(0,0,0,0.1);
+      padding: 40px;
+      margin: 30px auto;
+      max-width: 800px;
+    }
+
+    .testimonial-card img {
+      border-radius: 50%;
+      width: 100px;
+      height: 100px;
+      object-fit: cover;
+      border: 2px solid #dee2e6;
+    }
+
+    .testimonial-card h5 {
+      font-size: 1.4rem;
+      margin-top: 20px;
+      font-weight: bold;
+    }
+
+    .testimonial-card p {
+      font-size: 1.2rem;
+      font-style: italic;
+      margin-top: 10px;
+    }
+
+    @media (max-width: 768px) {
+      .about-block {
+        flex-direction: column !important;
+        text-align: center;
+      }
+
+      .about-gallery img {
+        max-width: 100%;
+      }
+
+      h1.section-title {
+        font-size: 2.3rem;
+      }
+
+      h2 {
+        font-size: 2rem;
+      }
+
+      .testimonial-card {
+        padding: 25px;
+      }
+
+      #backToTopBtn {
+        width: 50px;
+        height: 50px;
+        font-size: 20px;
+      }
+    }
+  </style>
 </head>
 <body>
 
   <!-- Navbar -->
-  <nav class="navbar">
-    <div class="logo">Flower Shop</div>
-    <ul class="nav-links">
-      <li><a href="index.html">Home</a></li>
-      <li><a href="shop.html">Shop</a></li>
-      <li><a href="about.html">About</a></li>
-      <li><a href="#">Gallery</a></li>
-      <li><a href="#">Contact</a></li>
-    </ul>
+  <nav class="navbar navbar-expand-lg">
+    <div class="container">
+      <a class="navbar-brand fs-3 fw-bold" href="#">HookcraftAvenue</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+        <ul class="navbar-nav fs-5">
+          <li class="nav-item"><a class="nav-link" href="index.html">Home</a></li>
+          <li class="nav-item"><a class="nav-link" href="#">Shop</a></li>
+          <li class="nav-item"><a class="nav-link active" href="about.html">About</a></li>
+          <li class="nav-item"><a class="nav-link" href="#">Gallery</a></li>
+          <li class="nav-item"><a class="nav-link" href="#">Contact</a></li>
+        </ul>
+      </div>
+    </div>
   </nav>
 
-  <!-- About Page Main -->
+  <!-- Main Content -->
   <main class="about-page">
-    <h1 class="section-title">About us</h1>
+    <h1 class="section-title text-center" data-aos="fade-down">About Us</h1>
 
-    <section class="about-block">
-      <div class="about-text">
+    <!-- Section 1 -->
+    <section class="about-block container d-flex flex-column flex-md-row align-items-center" data-aos="fade-right">
+      <div class="about-text me-md-4">
         <h2>What is Hookcraft Avenue?</h2>
         <p>
           Lorem Ipsum is simply dummy text of the printing and typesetting industry.
@@ -35,22 +216,24 @@
         </p>
       </div>
       <div class="about-gallery">
-        <img src="about1.png" alt="Gallery 1">
-        <img src="about2.png" alt="Gallery 2">
+        <img src="images/about1.jpg" alt="Gallery 1" />
+        <img src="images/about2.png" alt="Gallery 2" />
       </div>
     </section>
 
-    <section class="about-gallery-grid">
-      <img src="about3.png" alt="Event 1">
-      <img src="about4.png" alt="Event 2">
-      <img src="about5.png" alt="Event 3">
-      <img src="about6.png" alt="Event 4">
+    <!-- Image Grid -->
+    <section class="about-gallery-grid container text-center" data-aos="zoom-in-up">
+      <img src="images/about3.png" alt="Event 1" />
+      <img src="images/about4.png" alt="Event 2" />
+      <img src="images/about5.png" alt="Event 3" />
+      <img src="images/about6.png" alt="Event 4" />
     </section>
 
-    <section class="about-block reverse">
-      <div class="about-gallery">
-        <img src="about7.png" alt="Gallery 3">
-        <img src="about8.png" alt="Gallery 4">
+    <!-- Section 2 -->
+    <section class="about-block container d-flex flex-column flex-md-row align-items-center reverse" data-aos="fade-left">
+      <div class="about-gallery me-md-4">
+        <img src="images/about7.png" alt="Gallery 3" />
+        <img src="images/about8.png" alt="Gallery 4" />
       </div>
       <div class="about-text">
         <h2>What we do?</h2>
@@ -62,18 +245,44 @@
       </div>
     </section>
 
+    <!-- Testimonials -->
+    <section class="testimonials" data-aos="fade-up">
+      <h2 class="mb-4">What Our Customers Say</h2>
+      <div class="testimonial-card">
+        <img src="images/avatar1.png" alt="Client 1" />
+        <h5>Anna Lopez</h5>
+        <p>"Beautiful flowers and wonderful customer service! They made my anniversary extra special."</p>
+      </div>
+      <div class="testimonial-card">
+        <img src="images/avatar2.png" alt="Client 2" />
+        <h5>Jake Mendoza</h5>
+        <p>"Highly recommend Hookcraft Avenue. Fast delivery and such elegant arrangements!"</p>
+      </div>
+    </section>
   </main>
 
+  <!-- Back to Top Button -->
+  <button id="backToTopBtn" title="Go to top">↑</button>
+
   <!-- Footer -->
-  <footer class="footer">
-    <nav>
-      <a href="index.html">Home</a>
-      <a href="shop.html">Shop</a>
-      <a href="about.html">About</a>
-      <a href="#">Gallery</a>
-      <a href="#">Contact</a>
-    </nav>
+  <footer class="footer bg-dark text-white text-center py-4 mt-5">
+    <div class="container">
+      <p class="mb-0">&copy; 2025 Hookcraft Avenue. All rights reserved.</p>
+    </div>
   </footer>
 
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
+  <script>
+    AOS.init();
+    const backToTopBtn = document.getElementById("backToTopBtn");
+    window.onscroll = function () {
+      backToTopBtn.style.display = (document.documentElement.scrollTop > 200) ? "block" : "none";
+    };
+    backToTopBtn.addEventListener("click", () => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  </script>
 </body>
 </html>
