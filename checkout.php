@@ -40,9 +40,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_checkout'])) 
     $order_id = $stmt->insert_id;
 
     $insert_items = $conn->prepare("INSERT INTO order_item (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)");
+    $update_stock = $conn->prepare("UPDATE products SET stock = stock - ? WHERE id = ? AND stock >= ?");
+
     foreach ($cart_items as $item) {
       $insert_items->bind_param("iiid", $order_id, $item['id'], $item['quantity'], $item['price']);
       $insert_items->execute();
+
+      $qty = $item['quantity'];
+      $pid = $item['id'];
+      $update_stock->bind_param("iii", $qty, $pid, $qty);
+      $update_stock->execute();
     }
 
     $formspree_url = "https://formspree.io/f/xjkvwyyq";

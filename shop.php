@@ -103,17 +103,13 @@ $cart_count = count($_SESSION['cart']);
       opacity: 1;
       transform: translateX(-50%) translateY(-5px);
     }
-    #priceSliderContainer {
-      user-select: none;
-    }
   </style>
 </head>
 <body>
 <nav class="navbar navbar-expand-lg">
   <div class="container">
     <a class="navbar-brand logo" href="#">HookcraftAvenue</a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-      aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
       <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
@@ -129,7 +125,7 @@ $cart_count = count($_SESSION['cart']);
 </nav>
 <div class="container mt-3 d-flex justify-content-end align-items-center gap-2 flex-wrap">
   <input type="text" id="searchInput" class="form-control" placeholder="Search products..." style="max-width: 250px;">
-  <a href="cart.php" class="btn btn-dark">🛒 Cart (<span id="cart-count"><?= $cart_count ?></span>)</a>
+  <a href="cart.php" class="btn btn-dark">🛒 Cart (<span id="cart-count"><?php echo $cart_count; ?></span>)</a>
 </div>
 <div class="container-fluid mt-4">
   <div class="row">
@@ -162,13 +158,25 @@ $cart_count = count($_SESSION['cart']);
           $productImage = $row['image'];
           $productPrice = $row['price'];
           $productCategory = $row['category'];
+          $productStock = $row['stock'];
         ?>
         <div class="col-sm-6 col-md-4 product-item" data-category="<?= $productCategory ?>" data-name="<?= $productName ?>" data-price="<?= $productPrice ?>">
-          <div class="product-card">
-            <img src="<?= $productImage ?>" alt="<?= $productName ?>">
-            <p class="product-price">₱<?= number_format($productPrice, 2) ?></p>
-            <button class="add-to-cart-btn" data-id="<?= $row['id'] ?>">Add to Cart</button>
-          </div>
+     <div class="product-card position-relative">
+  <img src="<?= $productImage ?>" alt="<?= $productName ?>">
+  <p class="product-price">₱<?= number_format($productPrice, 2) ?></p>
+
+  <!-- Styled stock badge -->
+  <div class="position-absolute top-0 end-0 m-2">
+    <span class="badge bg-secondary">Stock: <?= $productStock ?></span>
+  </div>
+
+  <?php if ($productStock > 0): ?>
+    <button class="add-to-cart-btn" data-id="<?= $row['id'] ?>">Add to Cart</button>
+  <?php else: ?>
+    <button class="add-to-cart-btn btn-secondary" disabled>Out of Stock</button>
+  <?php endif; ?>
+</div>
+
         </div>
         <?php } ?>
       </div>
