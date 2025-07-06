@@ -6,6 +6,14 @@ if (!isset($_SESSION['cart'])) {
   $_SESSION['cart'] = [];
 }
 
+// Handle item removal
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['remove_id'])) {
+  $remove_id = intval($_POST['remove_id']);
+  if (isset($_SESSION['cart'][$remove_id])) {
+    unset($_SESSION['cart'][$remove_id]);
+  }
+}
+
 $total = 0;
 $cart_items = [];
 if (!empty($_SESSION['cart'])) {
@@ -18,6 +26,7 @@ if (!empty($_SESSION['cart'])) {
     $subtotal = $qty * $row['price'];
     $total += $subtotal;
     $cart_items[] = [
+      'id' => $pid,
       'name' => $row['name'],
       'image' => $row['image'],
       'price' => $row['price'],
@@ -64,12 +73,19 @@ if (!empty($_SESSION['cart'])) {
             </td>
             <td>₱<?= number_format($item['price'], 2) ?></td>
             <td><?= $item['quantity'] ?></td>
-            <td>₱<?= number_format($item['subtotal'], 2) ?></td>
+            <td>
+              ₱<?= number_format($item['subtotal'], 2) ?>
+              <form method="post" class="d-inline">
+                <input type="hidden" name="remove_id" value="<?= $item['id'] ?>">
+                <button type="submit" class="btn btn-sm btn-danger ms-2" onclick="return confirm('Remove this item?')">Remove</button>
+              </form>
+            </td>
           </tr>
         <?php endforeach; ?>
       </tbody>
     </table>
-    <div class="d-flex justify-content-end">
+    <div class="d-flex justify-content-between mt-3">
+      <a href="shop.php" class="btn btn-secondary">← Continue Shopping</a>
       <h4>Total: ₱<?= number_format($total, 2) ?></h4>
     </div>
     <div class="d-flex justify-content-end mt-3">

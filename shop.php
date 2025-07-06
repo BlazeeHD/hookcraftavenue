@@ -103,6 +103,9 @@ $cart_count = count($_SESSION['cart']);
       opacity: 1;
       transform: translateX(-50%) translateY(-5px);
     }
+    #priceSliderContainer {
+      user-select: none;
+    }
   </style>
 </head>
 <body>
@@ -142,10 +145,10 @@ $cart_count = count($_SESSION['cart']);
       </ul>
       <div class="filter-price">
         <h3>Filter by Price</h3>
-        <input type="range" class="form-range" min="20" max="1000" value="45">
+        <input type="range" class="form-range" min="20" max="1000" value="1000" id="priceRange">
         <div class="d-flex justify-content-between">
-          <span>₱70</span>
-          <span>₱1000</span>
+          <span>₱20</span>
+          <span>₱<span id="maxPrice">1000</span></span>
         </div>
       </div>
     </aside>
@@ -160,7 +163,7 @@ $cart_count = count($_SESSION['cart']);
           $productPrice = $row['price'];
           $productCategory = $row['category'];
         ?>
-        <div class="col-sm-6 col-md-4 product-item" data-category="<?= $productCategory ?>" data-name="<?= $productName ?>">
+        <div class="col-sm-6 col-md-4 product-item" data-category="<?= $productCategory ?>" data-name="<?= $productName ?>" data-price="<?= $productPrice ?>">
           <div class="product-card">
             <img src="<?= $productImage ?>" alt="<?= $productName ?>">
             <p class="product-price">₱<?= number_format($productPrice, 2) ?></p>
@@ -182,6 +185,7 @@ $cart_count = count($_SESSION['cart']);
       item.style.display = (category === 'all' || item.dataset.category === category) ? 'block' : 'none';
     });
   }
+
   document.getElementById('searchInput').addEventListener('input', function () {
     const keyword = this.value.toLowerCase();
     document.querySelectorAll('.product-item').forEach(item => {
@@ -202,6 +206,24 @@ $cart_count = count($_SESSION['cart']);
         document.getElementById('cart-count').innerText = data;
       });
     });
+  });
+
+  const priceSlider = document.getElementById('priceRange');
+  const maxPriceText = document.getElementById('maxPrice');
+
+  priceSlider.addEventListener('input', function () {
+    const maxPrice = parseInt(this.value);
+    maxPriceText.textContent = maxPrice;
+
+    document.querySelectorAll('.product-item').forEach(item => {
+      const itemPrice = parseFloat(item.dataset.price);
+      item.style.display = (itemPrice <= maxPrice) ? 'block' : 'none';
+    });
+  });
+
+  window.addEventListener('DOMContentLoaded', () => {
+    priceSlider.value = 1000;
+    maxPriceText.textContent = '1000';
   });
 </script>
 </body>

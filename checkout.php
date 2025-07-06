@@ -110,7 +110,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <strong>₱<?= number_format($total, 2) ?></strong>
       </li>
     </ul>
-    <button type="submit" class="btn btn-success w-100">Place Order</button>
+    <div class="d-flex justify-content-between">
+      <a href="cart.php" class="btn btn-secondary">← Go Back to Cart</a>
+      <button type="submit" class="btn btn-success">Place Order</button>
+    </div>
   </form>
 </div>
 <script>
