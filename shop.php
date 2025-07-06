@@ -1,5 +1,25 @@
 <?php
 include 'db.php';
+session_start();
+
+// Initialize cart if not set
+if (!isset($_SESSION['cart'])) {
+  $_SESSION['cart'] = [];
+}
+
+// Handle Add to Cart via AJAX
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['product_id'])) {
+  $pid = $_POST['product_id'];
+  if (isset($_SESSION['cart'][$pid])) {
+    $_SESSION['cart'][$pid]++;
+  } else {
+    $_SESSION['cart'][$pid] = 1;
+  }
+  echo count($_SESSION['cart']);
+  exit;
+}
+
+$cart_count = count($_SESSION['cart']);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -20,8 +40,8 @@ include 'db.php';
     }
     .navbar-brand {
       font-family: Arial, sans-serif;
-      font-weight: bold;
       color: #333;
+      font-weight: normal;
     }
     .product-card {
       background: #fff;
@@ -86,17 +106,13 @@ include 'db.php';
   </style>
 </head>
 <body>
-<nav class="navbar navbar-expand-lg" style="background-color: #ffcad4;">
+<nav class="navbar navbar-expand-lg">
   <div class="container">
-    <a class="navbar-brand logo" href="#" style="font-family: 'ARIAL'; color: #333;">HookcraftAvenue</a>
-    
-    <!-- Hamburger icon -->
+    <a class="navbar-brand logo" href="#">HookcraftAvenue</a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
       aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
-
-    <!-- Links -->
     <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
       <ul class="navbar-nav nav-links">
         <li class="nav-item"><a class="nav-link" href="index.html">Home</a></li>
@@ -108,33 +124,31 @@ include 'db.php';
     </div>
   </div>
 </nav>
-
 <div class="container mt-3 d-flex justify-content-end align-items-center gap-2 flex-wrap">
   <input type="text" id="searchInput" class="form-control" placeholder="Search products..." style="max-width: 250px;">
-  <button class="btn btn-dark" onclick="alert('Cart page under construction')">🛒 Cart</button>
+  <a href="cart.php" class="btn btn-dark">🛒 Cart (<span id="cart-count"><?= $cart_count ?></span>)</a>
 </div>
 <div class="container-fluid mt-4">
   <div class="row">
-     <aside class="col-md-3 sidebar">
-        <h2>Categories</h2>
-        <ul class="list-group mb-4">
-          <li class="list-group-item"><a href="#" onclick="filterProducts('all')">All</a></li>
-          <li class="list-group-item"><a href="#" onclick="filterProducts('mini')">Fancy Mini Flower</a></li>
-          <li class="list-group-item"><a href="#" onclick="filterProducts('giant')">Giant Flower</a></li>
-          <li class="list-group-item"><a href="#" onclick="filterProducts('choco')">Chocolate Flower</a></li>
-          <li class="list-group-item"><a href="#" onclick="filterProducts('bouquet')">Flower Bouquet</a></li>
-          <li class="list-group-item"><a href="#" onclick="filterProducts('accessories')">Accessories</a></li>
-        </ul>
-
-        <div class="filter-price">
-          <h3>Filter by Price</h3>
-          <input type="range" class="form-range" min="20" max="1000" value="45">
-          <div class="d-flex justify-content-between">
-            <span>₱70</span>
-            <span>₱1000</span>
-          </div>
+    <aside class="col-md-3 sidebar">
+      <h2>Categories</h2>
+      <ul class="list-group mb-4">
+        <li class="list-group-item"><a href="#" onclick="filterProducts('all')">All</a></li>
+        <li class="list-group-item"><a href="#" onclick="filterProducts('mini')">Fancy Mini Flower</a></li>
+        <li class="list-group-item"><a href="#" onclick="filterProducts('giant')">Giant Flower</a></li>
+        <li class="list-group-item"><a href="#" onclick="filterProducts('choco')">Chocolate Flower</a></li>
+        <li class="list-group-item"><a href="#" onclick="filterProducts('bouquet')">Flower Bouquet</a></li>
+        <li class="list-group-item"><a href="#" onclick="filterProducts('accessories')">Accessories</a></li>
+      </ul>
+      <div class="filter-price">
+        <h3>Filter by Price</h3>
+        <input type="range" class="form-range" min="20" max="1000" value="45">
+        <div class="d-flex justify-content-between">
+          <span>₱70</span>
+          <span>₱1000</span>
         </div>
-      </aside>
+      </div>
+    </aside>
     <section class="col-md-9">
       <div class="row g-4" id="product-list">
         <?php
@@ -146,14 +160,11 @@ include 'db.php';
           $productPrice = $row['price'];
           $productCategory = $row['category'];
         ?>
-        <div class="col-sm-6 col-md-4 product-item" data-category="<?= $productCategory ?>" data-name="<?= $productName ?>" data-price="<?= $productPrice ?>" data-image="<?= $productImage ?>">
+        <div class="col-sm-6 col-md-4 product-item" data-category="<?= $productCategory ?>" data-name="<?= $productName ?>">
           <div class="product-card">
             <img src="<?= $productImage ?>" alt="<?= $productName ?>">
             <p class="product-price">₱<?= number_format($productPrice, 2) ?></p>
-            <form action="cart_action.php?action=add" method="post">
-              <input type="hidden" name="product_id" value="<?= $row['id'] ?>">
-              <button type="submit" class="add-to-cart-btn">Add to Cart</button>
-            </form>
+            <button class="add-to-cart-btn" data-id="<?= $row['id'] ?>">Add to Cart</button>
           </div>
         </div>
         <?php } ?>
@@ -167,15 +178,29 @@ include 'db.php';
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
   function filterProducts(category) {
-    const products = document.querySelectorAll('.product-item');
-    products.forEach(product => {
-      product.style.display = (category === 'all' || product.dataset.category === category) ? 'block' : 'none';
+    document.querySelectorAll('.product-item').forEach(item => {
+      item.style.display = (category === 'all' || item.dataset.category === category) ? 'block' : 'none';
     });
   }
   document.getElementById('searchInput').addEventListener('input', function () {
     const keyword = this.value.toLowerCase();
     document.querySelectorAll('.product-item').forEach(item => {
       item.style.display = item.dataset.name.toLowerCase().includes(keyword) ? 'block' : 'none';
+    });
+  });
+
+  document.querySelectorAll('.add-to-cart-btn').forEach(button => {
+    button.addEventListener('click', function () {
+      const productId = this.getAttribute('data-id');
+      fetch('shop.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'product_id=' + productId
+      })
+      .then(res => res.text())
+      .then(data => {
+        document.getElementById('cart-count').innerText = data;
+      });
     });
   });
 </script>
