@@ -14,6 +14,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['remove_id'])) {
   }
 }
 
+// Handle quantity update
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_id'], $_POST['update_qty'])) {
+  $update_id = intval($_POST['update_id']);
+  $update_qty = intval($_POST['update_qty']);
+
+  // Check if quantity is valid and product exists
+  $stock_check = mysqli_query($conn, "SELECT stock FROM products WHERE id = $update_id");
+  $stock_row = mysqli_fetch_assoc($stock_check);
+  if ($stock_row && $update_qty > 0 && $update_qty <= $stock_row['stock']) {
+    $_SESSION['cart'][$update_id] = $update_qty;
+  }
+}
+
 $total = 0;
 $cart_items = [];
 if (!empty($_SESSION['cart'])) {
@@ -31,6 +44,7 @@ if (!empty($_SESSION['cart'])) {
       'image' => $row['image'],
       'price' => $row['price'],
       'quantity' => $qty,
+      'stock' => $row['stock'],
       'subtotal' => $subtotal
     ];
   }
@@ -73,7 +87,16 @@ if (!empty($_SESSION['cart'])) {
               <?= $item['name'] ?>
             </td>
             <td>₱<?= number_format($item['price'], 2) ?></td>
-            <td><?= $item['quantity'] ?></td>
+            <td>
+              <form method="post" class="d-flex align-items-center">
+                <input type="hidden" name="update_id" value="<?= $item['id'] ?>">
+                <select name="update_qty" class="form-select form-select-sm me-2" onchange="this.form.submit()" style="width:auto;">
+                  <?php for ($i = 1; $i <= $item['stock']; $i++): ?>
+                    <option value="<?= $i ?>" <?= $i == $item['quantity'] ? 'selected' : '' ?>><?= $i ?></option>
+                  <?php endfor; ?>
+                </select>
+              </form>
+            </td>
             <td>₱<?= number_format($item['subtotal'], 2) ?></td>
             <td>
               <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#confirmRemoveModal" data-remove-id="<?= $item['id'] ?>">Remove</button>
