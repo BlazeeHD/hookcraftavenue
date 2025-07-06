@@ -2,7 +2,7 @@
 $host = '192.168.101.81';
 $port = 3307;
 $user = 'remote_root';
-$pass = ''; // or your MySQL password if set
+$pass = ''; // basta sa password ni db
 $dbname = 'flower_shop';
 
 
