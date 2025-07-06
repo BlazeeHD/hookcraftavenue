@@ -30,12 +30,14 @@ if (!empty($_SESSION['cart'])) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_checkout'])) {
   $name = trim($_POST['name']);
-  $address = trim($_POST['street'] . ', ' . $_POST['barangay'] . ', ' . $_POST['city'] . ', ' . $_POST['province'] . ' ' . $_POST['zip']);
+  $address = trim($_POST['address']);
   $phone = trim($_POST['phone']);
+  $payment_method = $_POST['payment_method'] ?? 'GCash';
+  $payment_status = 'Pending';
 
   if ($name && $address && $phone && !empty($cart_items)) {
-    $stmt = $conn->prepare("INSERT INTO orders (customer_name, address, phone, total) VALUES (?, ?, ?, ?)");
-    $stmt->bind_param("sssd", $name, $address, $phone, $total);
+    $stmt = $conn->prepare("INSERT INTO orders (customer_name, address, phone, total, payment_method, payment_status) VALUES (?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param("sssdds", $name, $address, $phone, $total, $payment_method, $payment_status);
     $stmt->execute();
     $order_id = $stmt->insert_id;
 
@@ -52,6 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_checkout'])) 
       $update_stock->execute();
     }
 
+    // Formspree Notification (without file)
     $formspree_url = "https://formspree.io/f/xjkvwyyq";
     $body = "name=$name&address=$address&phone=$phone&total=₱$total";
     foreach ($cart_items as $item) {
@@ -67,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_checkout'])) 
     curl_close($ch);
 
     $_SESSION['cart'] = [];
-    echo '<script>window.location="thankyou.php";</script>';
+    echo '<script>window.location="thankyou.php?total=' . $total . '";</script>';
     exit();
   } else {
     echo '<script>alert("Please fill out all fields correctly.");</script>';
@@ -95,36 +98,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_checkout'])) 
       <label for="name" class="form-label">Full Name</label>
       <input type="text" class="form-control" name="name" id="name" required>
     </div>
-
-    <h5 class="mt-4">Shipping Address</h5>
-    <div class="row">
-      <div class="col-md-6 mb-3">
-        <label for="street" class="form-label">Street</label>
-        <input type="text" class="form-control" name="street" id="street" required>
+    <div class="mb-3">
+      <label class="form-label">Address</label>
+      <div class="row g-2">
+        <div class="col-md-4">
+          <select class="form-select" name="region" required>
+            <option value="">Select Region</option>
+            <option value="Region XI">Region XI</option>
+            <option value="Region VII">Region VII</option>
+            <!-- Add more regions if needed -->
+          </select>
+        </div>
+        <div class="col-md-4">
+          <select class="form-select" name="province" required>
+            <option value="">Select Province</option>
+            <option value="Davao del Sur">Davao del Sur</option>
+            <option value="Cebu">Cebu</option>
+            <!-- Add more provinces -->
+          </select>
+        </div>
+        <div class="col-md-4">
+          <select class="form-select" name="city" required>
+            <option value="">Select City / Municipality</option>
+            <option value="Davao City">Davao City</option>
+            <option value="Cebu City">Cebu City</option>
+            <!-- Add more cities -->
+          </select>
+        </div>
+        <div class="col-md-6">
+          <input type="text" class="form-control" name="barangay" placeholder="Barangay" required>
+        </div>
+        <div class="col-md-6">
+          <input type="text" class="form-control" name="street" placeholder="Street / House No." required>
+        </div>
       </div>
-      <div class="col-md-6 mb-3">
-        <label for="barangay" class="form-label">Barangay</label>
-        <input type="text" class="form-control" name="barangay" id="barangay" required>
-      </div>
-      <div class="col-md-6 mb-3">
-        <label for="city" class="form-label">City / Municipality</label>
-        <input type="text" class="form-control" name="city" id="city" required>
-      </div>
-      <div class="col-md-4 mb-3">
-        <label for="province" class="form-label">Province</label>
-        <input type="text" class="form-control" name="province" id="province" required>
-      </div>
-      <div class="col-md-2 mb-3">
-        <label for="zip" class="form-label">Zip Code</label>
-        <input type="text" class="form-control" name="zip" id="zip" required pattern="[0-9]{4}">
-      </div>
+      <input type="hidden" name="address" id="finalAddress">
     </div>
-
     <div class="mb-3">
       <label for="phone" class="form-label">Phone Number</label>
       <input type="tel" class="form-control" name="phone" id="phone" required pattern="[0-9]{11}" placeholder="e.g. 09123456789">
     </div>
-
+    <div class="mb-3">
+      <label class="form-label">Payment Method</label><br>
+      <input type="radio" name="payment_method" value="GCash" checked> GCash (Manual Payment)
+    </div>
     <h4>Order Summary</h4>
     <ul class="list-group mb-3">
       <?php foreach ($cart_items as $item): ?>
@@ -163,5 +180,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_checkout'])) 
   </form>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  document.querySelector('form').addEventListener('submit', function() {
+    const region = document.querySelector('[name="region"]').value;
+    const province = document.querySelector('[name="province"]').value;
+    const city = document.querySelector('[name="city"]').value;
+    const barangay = document.querySelector('[name="barangay"]').value;
+    const street = document.querySelector('[name="street"]').value;
+    document.getElementById('finalAddress').value = `${street}, ${barangay}, ${city}, ${province}, ${region}`;
+  });
+</script>
 </body>
 </html>
