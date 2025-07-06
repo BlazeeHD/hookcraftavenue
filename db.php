@@ -1,7 +1,8 @@
 <?php
-$host = 'localhost'; // or '192.168.101.81' for remote access
-$user = 'root';
-$pass = ''; // set your password if needed
+$host = '192.168.101.81';
+$port = 3307;
+$user = 'remote_root';
+$pass = ''; // or your MySQL password if set
 $dbname = 'flower_shop';
 $port = 3307; // your custom port
 
