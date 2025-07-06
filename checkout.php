@@ -30,7 +30,7 @@ if (!empty($_SESSION['cart'])) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_checkout'])) {
   $name = trim($_POST['name']);
-  $address = trim($_POST['address']);
+  $address = trim($_POST['street'] . ', ' . $_POST['barangay'] . ', ' . $_POST['city'] . ', ' . $_POST['province'] . ' ' . $_POST['zip']);
   $phone = trim($_POST['phone']);
 
   if ($name && $address && $phone && !empty($cart_items)) {
@@ -53,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_checkout'])) 
     }
 
     $formspree_url = "https://formspree.io/f/xjkvwyyq";
-    $body = "name=$name&address=$address&phone=$phone&total=$total";
+    $body = "name=$name&address=$address&phone=$phone&total=₱$total";
     foreach ($cart_items as $item) {
       $body .= "&items[]=" . urlencode($item['name'] . ' x' . $item['quantity']);
     }
@@ -95,14 +95,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_checkout'])) 
       <label for="name" class="form-label">Full Name</label>
       <input type="text" class="form-control" name="name" id="name" required>
     </div>
-    <div class="mb-3">
-      <label for="address" class="form-label">Address</label>
-      <textarea class="form-control" name="address" id="address" rows="2" required></textarea>
+
+    <h5 class="mt-4">Shipping Address</h5>
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <label for="street" class="form-label">Street</label>
+        <input type="text" class="form-control" name="street" id="street" required>
+      </div>
+      <div class="col-md-6 mb-3">
+        <label for="barangay" class="form-label">Barangay</label>
+        <input type="text" class="form-control" name="barangay" id="barangay" required>
+      </div>
+      <div class="col-md-6 mb-3">
+        <label for="city" class="form-label">City / Municipality</label>
+        <input type="text" class="form-control" name="city" id="city" required>
+      </div>
+      <div class="col-md-4 mb-3">
+        <label for="province" class="form-label">Province</label>
+        <input type="text" class="form-control" name="province" id="province" required>
+      </div>
+      <div class="col-md-2 mb-3">
+        <label for="zip" class="form-label">Zip Code</label>
+        <input type="text" class="form-control" name="zip" id="zip" required pattern="[0-9]{4}">
+      </div>
     </div>
+
     <div class="mb-3">
       <label for="phone" class="form-label">Phone Number</label>
       <input type="tel" class="form-control" name="phone" id="phone" required pattern="[0-9]{11}" placeholder="e.g. 09123456789">
     </div>
+
     <h4>Order Summary</h4>
     <ul class="list-group mb-3">
       <?php foreach ($cart_items as $item): ?>

@@ -2,12 +2,10 @@
 include 'db.php';
 session_start();
 
-// Initialize cart if not set
 if (!isset($_SESSION['cart'])) {
   $_SESSION['cart'] = [];
 }
 
-// Handle Add to Cart via AJAX
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['product_id'])) {
   $pid = $_POST['product_id'];
   if (isset($_SESSION['cart'][$pid])) {
@@ -103,13 +101,32 @@ $cart_count = count($_SESSION['cart']);
       opacity: 1;
       transform: translateX(-50%) translateY(-5px);
     }
+    .cart-bounce {
+      animation: bounce 0.6s ease;
+    }
+    @keyframes bounce {
+      0%   { transform: scale(1); }
+      30%  { transform: scale(1.3); }
+      60%  { transform: scale(0.9); }
+      100% { transform: scale(1); }
+    }
+    .flash-added {
+      animation: flash 0.5s ease-in-out;
+      background-color: #28a745 !important;
+    }
+    @keyframes flash {
+      0%   { background-color: #ff6fa4; }
+      50%  { background-color: #28a745; }
+      100% { background-color: #ff6fa4; }
+    }
   </style>
 </head>
 <body>
 <nav class="navbar navbar-expand-lg">
   <div class="container">
     <a class="navbar-brand logo" href="#">HookcraftAvenue</a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+      aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
@@ -125,7 +142,9 @@ $cart_count = count($_SESSION['cart']);
 </nav>
 <div class="container mt-3 d-flex justify-content-end align-items-center gap-2 flex-wrap">
   <input type="text" id="searchInput" class="form-control" placeholder="Search products..." style="max-width: 250px;">
-  <a href="cart.php" class="btn btn-dark">🛒 Cart (<span id="cart-count"><?php echo $cart_count; ?></span>)</a>
+  <a href="cart.php" class="btn btn-dark position-relative">
+    🛒 Cart <span id="cart-count" class="badge bg-light text-dark ms-1"><?php echo $cart_count; ?></span>
+  </a>
 </div>
 <div class="container-fluid mt-4">
   <div class="row">
@@ -161,22 +180,18 @@ $cart_count = count($_SESSION['cart']);
           $productStock = $row['stock'];
         ?>
         <div class="col-sm-6 col-md-4 product-item" data-category="<?= $productCategory ?>" data-name="<?= $productName ?>" data-price="<?= $productPrice ?>">
-     <div class="product-card position-relative">
-  <img src="<?= $productImage ?>" alt="<?= $productName ?>">
-  <p class="product-price">₱<?= number_format($productPrice, 2) ?></p>
-
-  <!-- Styled stock badge -->
-  <div class="position-absolute top-0 end-0 m-2">
-    <span class="badge bg-secondary">Stock: <?= $productStock ?></span>
-  </div>
-
-  <?php if ($productStock > 0): ?>
-    <button class="add-to-cart-btn" data-id="<?= $row['id'] ?>">Add to Cart</button>
-  <?php else: ?>
-    <button class="add-to-cart-btn btn-secondary" disabled>Out of Stock</button>
-  <?php endif; ?>
-</div>
-
+          <div class="product-card position-relative">
+            <img src="<?= $productImage ?>" alt="<?= $productName ?>">
+            <p class="product-price">₱<?= number_format($productPrice, 2) ?></p>
+            <div class="position-absolute top-0 end-0 m-2">
+              <span class="badge bg-secondary">Stock: <?= $productStock ?></span>
+            </div>
+            <?php if ($productStock > 0): ?>
+              <button class="add-to-cart-btn" data-id="<?= $row['id'] ?>">Add to Cart</button>
+            <?php else: ?>
+              <button class="add-to-cart-btn btn-secondary" disabled>Out of Stock</button>
+            <?php endif; ?>
+          </div>
         </div>
         <?php } ?>
       </div>
@@ -204,6 +219,9 @@ $cart_count = count($_SESSION['cart']);
   document.querySelectorAll('.add-to-cart-btn').forEach(button => {
     button.addEventListener('click', function () {
       const productId = this.getAttribute('data-id');
+      const cartCount = document.getElementById('cart-count');
+      const thisButton = this;
+
       fetch('shop.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -211,7 +229,11 @@ $cart_count = count($_SESSION['cart']);
       })
       .then(res => res.text())
       .then(data => {
-        document.getElementById('cart-count').innerText = data;
+        cartCount.innerText = data;
+        cartCount.classList.add('cart-bounce');
+        setTimeout(() => cartCount.classList.remove('cart-bounce'), 600);
+        thisButton.classList.add('flash-added');
+        setTimeout(() => thisButton.classList.remove('flash-added'), 500);
       });
     });
   });
@@ -222,7 +244,6 @@ $cart_count = count($_SESSION['cart']);
   priceSlider.addEventListener('input', function () {
     const maxPrice = parseInt(this.value);
     maxPriceText.textContent = maxPrice;
-
     document.querySelectorAll('.product-item').forEach(item => {
       const itemPrice = parseFloat(item.dataset.price);
       item.style.display = (itemPrice <= maxPrice) ? 'block' : 'none';
