@@ -62,6 +62,7 @@ if (!empty($_SESSION['cart'])) {
           <th>Price</th>
           <th>Quantity</th>
           <th>Subtotal</th>
+          <th>Action</th>
         </tr>
       </thead>
       <tbody>
@@ -73,12 +74,9 @@ if (!empty($_SESSION['cart'])) {
             </td>
             <td>₱<?= number_format($item['price'], 2) ?></td>
             <td><?= $item['quantity'] ?></td>
+            <td>₱<?= number_format($item['subtotal'], 2) ?></td>
             <td>
-              ₱<?= number_format($item['subtotal'], 2) ?>
-              <form method="post" class="d-inline">
-                <input type="hidden" name="remove_id" value="<?= $item['id'] ?>">
-                <button type="submit" class="btn btn-sm btn-danger ms-2" onclick="return confirm('Remove this item?')">Remove</button>
-              </form>
+              <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#confirmRemoveModal" data-remove-id="<?= $item['id'] ?>">Remove</button>
             </td>
           </tr>
         <?php endforeach; ?>
@@ -93,5 +91,37 @@ if (!empty($_SESSION['cart'])) {
     </div>
   <?php endif; ?>
 </div>
+
+<!-- Modal -->
+<div class="modal fade" id="confirmRemoveModal" tabindex="-1" aria-labelledby="confirmRemoveModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post">
+        <div class="modal-header">
+          <h5 class="modal-title" id="confirmRemoveModalLabel">Confirm Removal</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          Are you sure you want to remove this item from your cart?
+          <input type="hidden" name="remove_id" id="modal-remove-id">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-danger">Remove</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  const confirmModal = document.getElementById('confirmRemoveModal');
+  confirmModal.addEventListener('show.bs.modal', event => {
+    const button = event.relatedTarget;
+    const removeId = button.getAttribute('data-remove-id');
+    confirmModal.querySelector('#modal-remove-id').value = removeId;
+  });
+</script>
 </body>
 </html>

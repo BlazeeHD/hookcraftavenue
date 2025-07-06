@@ -28,7 +28,7 @@ if (!empty($_SESSION['cart'])) {
   }
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_checkout'])) {
   $name = trim($_POST['name']);
   $address = trim($_POST['address']);
   $phone = trim($_POST['phone']);
@@ -45,8 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $insert_items->execute();
     }
 
-    // Send email to Formspree
-    $formspree_url = "https://formspree.io/f/xjkvwyyq"; // Replace with your Formspree endpoint
+    $formspree_url = "https://formspree.io/f/xjkvwyyq";
     $body = "name=$name&address=$address&phone=$phone&total=$total";
     foreach ($cart_items as $item) {
       $body .= "&items[]=" . urlencode($item['name'] . ' x' . $item['quantity']);
@@ -61,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     curl_close($ch);
 
     $_SESSION['cart'] = [];
-    echo '<script>alert("Order placed successfully!"); window.location="thankyou.php";</script>';
+    echo '<script>window.location="thankyou.php";</script>';
     exit();
   } else {
     echo '<script>alert("Please fill out all fields correctly.");</script>';
@@ -84,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </nav>
 <div class="container mt-5">
   <h2 class="mb-4">Checkout</h2>
-  <form method="POST" onsubmit="return confirmOrder()">
+  <form method="POST">
     <div class="mb-3">
       <label for="name" class="form-label">Full Name</label>
       <input type="text" class="form-control" name="name" id="name" required>
@@ -112,14 +111,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </ul>
     <div class="d-flex justify-content-between">
       <a href="cart.php" class="btn btn-secondary">← Go Back to Cart</a>
-      <button type="submit" class="btn btn-success">Place Order</button>
+      <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#confirmModal">Place Order</button>
+    </div>
+
+    <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="confirmModalLabel">Confirm Order</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            Are you sure you want to place this order?
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" name="confirm_checkout" class="btn btn-success">Yes, Place Order</button>
+          </div>
+        </div>
+      </div>
     </div>
   </form>
 </div>
-<script>
-function confirmOrder() {
-  return confirm("Are you sure you want to place this order?");
-}
-</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
