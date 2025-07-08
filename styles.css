@@ -95,7 +95,7 @@
 
     /* Categories */
     .categories {
-    background: url('images/background-cat.jpg') no-repeat center/cover;
+    background: url('') no-repeat center/cover;
     padding: 50px 20px;
     text-align: center;
     }
@@ -125,7 +125,7 @@
     }
 
     .about {
-      background: url('images/background-abt.jpg') no-repeat center/cover;
+      background: url('') no-repeat center/cover;
       padding: 50px 20px;
      
     }
