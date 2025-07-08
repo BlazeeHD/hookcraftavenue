@@ -15,8 +15,8 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        background-color: #ffcad4;
-        padding: 10px 20px;
+      
+        padding: 5px 10px;
         position: sticky;
         top: 0;
         z-index: 1000;
@@ -24,8 +24,8 @@
     
     .navbar .logo {
         font-family: 'ARIAL';
-        font-size: 1.8rem;
-        color: #333;
+        font-size: 1.5rem;
+        color: #000000;
     }
     
     .nav-links {
@@ -36,13 +36,13 @@
     
     .nav-links li a {
         text-decoration: none;
-        color: #333;
+        color: #000000;
         font-size: 1rem;
         font-weight: bold;
     }
     
     .nav-links li a:hover {
-        color: #ff6fa4;
+        color: #c9054d;
     }
     
 
