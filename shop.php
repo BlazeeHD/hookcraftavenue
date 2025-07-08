@@ -28,6 +28,7 @@ $cart_count = count($_SESSION['cart']);
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <link rel="icon" href="images/logo.jpg" type="image/png">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
   <style>
     body {
       font-family: 'Open Sans', sans-serif;
@@ -122,25 +123,16 @@ $cart_count = count($_SESSION['cart']);
   </style>
 </head>
 <body>
-
-<!-- E-commerce Navbar -->
 <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
   <div class="container">
-    <!-- Brand Logo -->
     <a class="navbar-brand fw-bold" href="#">
       <img src="images/logo.jpg" alt="Logo" width="35" height="35" class="rounded-circle me-2">
       HookcraftAvenue
     </a>
-
-    <!-- Hamburger Icon for Mobile -->
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent"
-      aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
       <span class="navbar-toggler-icon"></span>
     </button>
-
-    <!-- Navbar Links + Icons -->
     <div class="collapse navbar-collapse" id="navbarContent">
-      <!-- Navigation Links -->
       <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
         <li class="nav-item"><a class="nav-link active" href="index.html">Home</a></li>
         <li class="nav-item"><a class="nav-link" href="shop.php">Shop</a></li>
@@ -148,20 +140,16 @@ $cart_count = count($_SESSION['cart']);
         <li class="nav-item"><a class="nav-link" href="gallery.html">Gallery</a></li>
         <li class="nav-item"><a class="nav-link" href="#">Contact</a></li>
       </ul>
-
-      <!-- Search Bar -->
       <form class="d-flex me-3" role="search">
         <input class="form-control form-control-sm me-2" type="search" placeholder="Search" aria-label="Search">
         <button class="btn btn-outline-secondary btn-sm" type="submit">Search</button>
       </form>
-
-      <!-- Cart & User Icons -->
       <ul class="navbar-nav flex-row">
         <li class="nav-item me-3">
           <a class="nav-link position-relative" href="cart.php">
             <i class="bi bi-cart fs-5"></i>
-            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-              
+            <span id="cart-icon-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+              <?php echo $cart_count; ?>
             </span>
           </a>
         </li>
@@ -173,16 +161,13 @@ $cart_count = count($_SESSION['cart']);
   </div>
 </nav>
 
-<!-- Bootstrap Icons CDN -->
-<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-
-
 <div class="container mt-3 d-flex justify-content-end align-items-center gap-2 flex-wrap">
   <input type="text" id="searchInput" class="form-control" placeholder="Search products..." style="max-width: 250px;">
   <a href="cart.php" class="btn btn-dark position-relative">
     🛒 Cart <span id="cart-count" class="badge bg-light text-dark ms-1"><?php echo $cart_count; ?></span>
   </a>
 </div>
+
 <div class="container-fluid mt-4">
   <div class="row">
     <aside class="col-md-3 sidebar">
@@ -198,6 +183,7 @@ $cart_count = count($_SESSION['cart']);
       <div class="filter-price">
         <h3>Filter by Price</h3>
         <input type="range" class="form-range" min="20" max="1000" value="1000" id="priceRange">
+
         <div class="d-flex justify-content-between">
           <span>₱20</span>
           <span>₱<span id="maxPrice">1000</span></span>
@@ -257,6 +243,7 @@ $cart_count = count($_SESSION['cart']);
     button.addEventListener('click', function () {
       const productId = this.getAttribute('data-id');
       const cartCount = document.getElementById('cart-count');
+      const cartIconBadge = document.getElementById('cart-icon-badge');
       const thisButton = this;
 
       fetch('shop.php', {
@@ -267,8 +254,13 @@ $cart_count = count($_SESSION['cart']);
       .then(res => res.text())
       .then(data => {
         cartCount.innerText = data;
+        cartIconBadge.innerText = data;
         cartCount.classList.add('cart-bounce');
-        setTimeout(() => cartCount.classList.remove('cart-bounce'), 600);
+        cartIconBadge.classList.add('cart-bounce');
+        setTimeout(() => {
+          cartCount.classList.remove('cart-bounce');
+          cartIconBadge.classList.remove('cart-bounce');
+        }, 600);
         thisButton.classList.add('flash-added');
         setTimeout(() => thisButton.classList.remove('flash-added'), 500);
       });
@@ -276,16 +268,18 @@ $cart_count = count($_SESSION['cart']);
   });
 
   const priceSlider = document.getElementById('priceRange');
-  const maxPriceText = document.getElementById('maxPrice');
+const maxPriceText = document.getElementById('maxPrice');
 
-  priceSlider.addEventListener('input', function () {
-    const maxPrice = parseInt(this.value);
-    maxPriceText.textContent = maxPrice;
-    document.querySelectorAll('.product-item').forEach(item => {
-      const itemPrice = parseFloat(item.dataset.price);
-      item.style.display = (itemPrice <= maxPrice) ? 'block' : 'none';
-    });
+priceSlider.addEventListener('input', function () {
+  const maxPrice = parseInt(this.value);
+  maxPriceText.textContent = maxPrice;
+
+  document.querySelectorAll('.product-item').forEach(item => {
+    const itemPrice = parseFloat(item.dataset.price);
+    item.style.display = (itemPrice <= maxPrice) ? 'block' : 'none';
   });
+});
+
 
   window.addEventListener('DOMContentLoaded', () => {
     priceSlider.value = 1000;
