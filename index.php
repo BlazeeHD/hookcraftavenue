@@ -15,51 +15,7 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <style>
-  /* Common hover effect for all images */
-img:hover {
-  transform: scale(1.05);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-}
 
-/* Gallery Grid Enhancements */
-.gallery-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1rem;
-  margin-top: 1rem;
-}
-
-.gallery-item { 
-  position: relative;
-  overflow: hidden;
-  border-radius: 10px;
-  cursor: pointer;
-}
-
-.gallery-item img {
-  width: 100%;
- 
-  display: block;
-  border-radius: 10px;
-}
-
-/* Overlay Popup on Hover */
-.gallery-item .overlay {
-  position: absolute;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  color: #fff;
-  width: 100%;
-  transform: translateY(100%);
-  transition: transform 0.3s ease;
-  padding: 0.8rem;
-  font-size: 0.9rem;
-}
-
-.gallery-item:hover .overlay {
-  transform: translateY(0);
-}
 
  
 </style>
@@ -128,7 +84,7 @@ img:hover {
       <div class="hero-content">
         <h1>Elevate your moments with our handcrafted floral creations</h1>
         <p>Celebrate Beauty, one petal at a time.</p>
-        <a href="shop.html" class="shop-now">Shop Now</a>
+        <a href="shop.php" class="shop-now">Shop Now</a>
       </div>
       <img src="images/hero-image.png" alt="Flower Hero" class="hero-img img-fluid mt-4 mt-md-0">
     </div>
@@ -257,6 +213,8 @@ img:hover {
     <a href="#" class="btn btn-sm mt-4" style="background-color: #ff6fa4; color: white; border-radius: 20px;">Customize Now</a>
   </div>
 </section>
+
+
 <!-- Login Modal -->
 <div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">

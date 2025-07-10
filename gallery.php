@@ -45,7 +45,7 @@
       </ul>
 
       <!-- Search Bar -->
-      <form class="d-flex me-3" role="search">
+              <form class="d-flex me-3" role="search">
         <input type="text" id="searchInput" class="form-control" placeholder="Search products..." style="max-width: 250px;">
         <button class="btn btn-outline-secondary btn-sm" type="submit">Search</button>
       </form>
@@ -61,7 +61,10 @@
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="account.php"><i class="bi bi-person fs-5"></i></a>
+          <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#loginModal">
+        <i class="bi bi-person fs-5"></i>
+        </a>
+
         </li>
       </ul>
     </div>
@@ -104,6 +107,47 @@
     </div>
   </div>
 </section>
+
+<!-- Login Modal -->
+<div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <form action="login.php" method="POST" class="modal-content p-4">
+      <h5 class="modal-title mb-3">Login</h5>
+      <div class="mb-3">
+        <input type="email" name="email" class="form-control" placeholder="Email" required>
+      </div>
+      <div class="mb-3">
+        <input type="password" name="password" class="form-control" placeholder="Password" required>
+      </div>
+      <div class="d-grid">
+        <button type="submit" class="btn btn-primary">Login</button>
+      </div>
+      <p class="mt-3 mb-0 text-center">No account? <a href="#" data-bs-toggle="modal" data-bs-target="#signupModal" data-bs-dismiss="modal">Sign Up</a></p>
+    </form>
+  </div>
+</div>
+
+<!-- Signup Modal -->
+<div class="modal fade" id="signupModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <form action="signup.php" method="POST" class="modal-content p-4">
+      <h5 class="modal-title mb-3">Sign Up</h5>
+      <div class="mb-3">
+        <input type="text" name="name" class="form-control" placeholder="Full Name" required>
+      </div>
+      <div class="mb-3">
+        <input type="email" name="email" class="form-control" placeholder="Email" required>
+      </div>
+      <div class="mb-3">
+        <input type="password" name="password" class="form-control" placeholder="Password" required>
+      </div>
+      <div class="d-grid">
+        <button type="submit" class="btn btn-success">Create Account</button>
+      </div>
+      <p class="mt-3 mb-0 text-center">Already have an account? <a href="#" data-bs-toggle="modal" data-bs-target="#loginModal" data-bs-dismiss="modal">Login</a></p>
+    </form>
+  </div>
+</div>
 
 <!-- Footer -->
 <footer class="footer mt-5">

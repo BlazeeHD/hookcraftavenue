@@ -14,170 +14,7 @@
 <link rel="stylesheet" href="styles.css">
   <!-- Custom CSS -->
   <style>
-    :root {
-      --main-font-size: 20px;
-      --heading-font-size: 2.7rem;
-      --section-title-size: 3.5rem;
-    }
 
-    body {
-      font-size: var(--main-font-size);
-      font-family: 'Segoe UI', sans-serif;
-    }
-
-    h1.section-title {
-      font-size: var(--section-title-size);
-      font-weight: bold;
-      margin-top: 2rem;
-      margin-bottom: 2rem;
-    }
-
-    h2 {
-      font-size: var(--heading-font-size);
-      font-weight: 600;
-      margin-bottom: 1rem;
-    }
-
-    p {
-      font-size: 1.25rem;
-      line-height: 1.6;
-    }
-
-    /* Back to top button */
-    #backToTopBtn {
-      position: fixed;
-      bottom: 30px;
-      right: 30px;
-      z-index: 100;
-      display: none;
-      background-color: #d63384;
-      color: white;
-      border: none;
-      border-radius: 50%;
-      width: 60px;
-      height: 60px;
-      font-size: 24px;
-      cursor: pointer;
-    }
-
-    /* Enlarged image settings */
-    .about-gallery img,
-    .about-gallery-grid img {
-      width: 100%;
-      max-width: 400px;
-      height: 300px;
-      object-fit: cover;
-      border-radius: 12px;
-      margin: 10px;
-      transition: transform 0.3s ease-in-out;
-    }
-
-    .about-gallery,
-    .about-gallery-grid {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 1rem;
-    }
-
-    .about-block {
-      gap: 2rem;
-      margin-top: 40px;
-      margin-bottom: 40px;
-    }
-
-    .about-text {
-      flex: 1;
-      min-width: 300px;
-    }
-
-    .about-gallery {
-      flex: 1;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      align-items: center;
-    }
-
-    .about-gallery-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 1rem;
-      max-width: 1200px;
-      margin: 1.5rem auto;
-    }
-
-    .about-gallery-grid img:hover {
-      transform: scale(1.03);
-    }
-
-    .about-block.reverse {
-      flex-direction: row-reverse;
-    }
-
-    .testimonials {
-      background-color: #f8f9fa;
-      padding: 60px 20px;
-      text-align: center;
-    }
-
-    .testimonial-card {
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 0 12px rgba(0,0,0,0.1);
-      padding: 40px;
-      margin: 30px auto;
-      max-width: 800px;
-    }
-
-    .testimonial-card img {
-      border-radius: 50%;
-      width: 100px;
-      height: 100px;
-      object-fit: cover;
-      border: 2px solid #dee2e6;
-    }
-
-    .testimonial-card h5 {
-      font-size: 1.4rem;
-      margin-top: 20px;
-      font-weight: bold;
-    }
-
-    .testimonial-card p {
-      font-size: 1.2rem;
-      font-style: italic;
-      margin-top: 10px;
-    }
-
-    @media (max-width: 768px) {
-      .about-block {
-        flex-direction: column !important;
-        text-align: center;
-      }
-
-      .about-gallery img {
-        max-width: 100%;
-      }
-
-      h1.section-title {
-        font-size: 2.3rem;
-      }
-
-      h2 {
-        font-size: 2rem;
-      }
-
-      .testimonial-card {
-        padding: 25px;
-      }
-
-      #backToTopBtn {
-        width: 50px;
-        height: 50px;
-        font-size: 20px;
-      }
-    }
   </style>
 </head>
 <body>
@@ -209,10 +46,11 @@
       </ul>
 
       <!-- Search Bar -->
-           <form class="d-flex me-3" role="search">
+              <form class="d-flex me-3" role="search">
         <input type="text" id="searchInput" class="form-control" placeholder="Search products..." style="max-width: 250px;">
         <button class="btn btn-outline-secondary btn-sm" type="submit">Search</button>
       </form>
+
       <!-- Cart & User Icons -->
       <ul class="navbar-nav flex-row">
         <li class="nav-item me-3">
@@ -224,7 +62,10 @@
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="account.php"><i class="bi bi-person fs-5"></i></a>
+          <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#loginModal">
+        <i class="bi bi-person fs-5"></i>
+        </a>
+
         </li>
       </ul>
     </div>
@@ -300,6 +141,49 @@
 
   <!-- Back to Top Button -->
   <button id="backToTopBtn" title="Go to top">↑</button>
+
+  
+<!-- Login Modal -->
+<div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <form action="login.php" method="POST" class="modal-content p-4">
+      <h5 class="modal-title mb-3">Login</h5>
+      <div class="mb-3">
+        <input type="email" name="email" class="form-control" placeholder="Email" required>
+      </div>
+      <div class="mb-3">
+        <input type="password" name="password" class="form-control" placeholder="Password" required>
+      </div>
+      <div class="d-grid">
+        <button type="submit" class="btn btn-primary">Login</button>
+      </div>
+      <p class="mt-3 mb-0 text-center">No account? <a href="#" data-bs-toggle="modal" data-bs-target="#signupModal" data-bs-dismiss="modal">Sign Up</a></p>
+    </form>
+  </div>
+</div>
+
+<!-- Signup Modal -->
+<div class="modal fade" id="signupModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <form action="signup.php" method="POST" class="modal-content p-4">
+      <h5 class="modal-title mb-3">Sign Up</h5>
+      <div class="mb-3">
+        <input type="text" name="name" class="form-control" placeholder="Full Name" required>
+      </div>
+      <div class="mb-3">
+        <input type="email" name="email" class="form-control" placeholder="Email" required>
+      </div>
+      <div class="mb-3">
+        <input type="password" name="password" class="form-control" placeholder="Password" required>
+      </div>
+      <div class="d-grid">
+        <button type="submit" class="btn btn-success">Create Account</button>
+      </div>
+      <p class="mt-3 mb-0 text-center">Already have an account? <a href="#" data-bs-toggle="modal" data-bs-target="#loginModal" data-bs-dismiss="modal">Login</a></p>
+    </form>
+  </div>
+</div>
+
 
   <!-- Footer -->
   <footer class="footer bg-dark text-white text-center py-4 mt-5">
