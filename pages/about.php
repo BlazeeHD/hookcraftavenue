@@ -92,7 +92,7 @@
         </p>
       </div>
       <div class="about-gallery" style="margin-bottom: 150px;">
-        <img src="../images/gallery1.jpg" alt="Gallery 1" />
+        <img src="../asset/images/about1.jpg" alt="Gallery 1" />
         
       </div>
         
