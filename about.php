@@ -8,7 +8,7 @@
 
   <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
   <!-- AOS CSS -->
   <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet" />
 <link rel="stylesheet" href="styles.css">
@@ -201,26 +201,25 @@
     <div class="collapse navbar-collapse" id="navbarContent">
       <!-- Navigation Links -->
       <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
-        <li class="nav-item"><a class="nav-link active" href="index.html">Home</a></li>
+        <li class="nav-item"><a class="nav-link active" href="index.php">Home</a></li>
         <li class="nav-item"><a class="nav-link" href="shop.php">Shop</a></li>
-        <li class="nav-item"><a class="nav-link" href="about.html">About</a></li>
-        <li class="nav-item"><a class="nav-link" href="gallery.html">Gallery</a></li>
+        <li class="nav-item"><a class="nav-link" href="about.php">About</a></li>
+        <li class="nav-item"><a class="nav-link" href="gallery.php">Gallery</a></li>
         <li class="nav-item"><a class="nav-link" href="#">Contact</a></li>
       </ul>
 
       <!-- Search Bar -->
-      <form class="d-flex me-3" role="search">
-        <input class="form-control form-control-sm me-2" type="search" placeholder="Search" aria-label="Search">
+           <form class="d-flex me-3" role="search">
+        <input type="text" id="searchInput" class="form-control" placeholder="Search products..." style="max-width: 250px;">
         <button class="btn btn-outline-secondary btn-sm" type="submit">Search</button>
       </form>
-
       <!-- Cart & User Icons -->
       <ul class="navbar-nav flex-row">
         <li class="nav-item me-3">
           <a class="nav-link position-relative" href="cart.php">
             <i class="bi bi-cart fs-5"></i>
             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-              3
+              
             </span>
           </a>
         </li>
@@ -231,6 +230,7 @@
     </div>
   </div>
 </nav>
+
 
 <!-- Bootstrap Icons CDN -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">

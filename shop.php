@@ -30,126 +30,51 @@ $cart_count = count($_SESSION['cart']);
   <link rel="icon" href="images/logo.jpg" type="image/png">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
   <style>
-    body {
-      font-family: 'Open Sans', sans-serif;
-      background-color: #fff6f9;
-    }
-    .navbar {
-      background-color: #ffcad4;
-    }
-    .navbar-brand {
-      font-family: Arial, sans-serif;
-      color: #333;
-      font-weight: normal;
-    }
-    .product-card {
-      background: #fff;
-      padding: 15px;
-      border-radius: 10px;
-      text-align: center;
-      transition: transform 0.3s, box-shadow 0.3s;
-      position: relative;
-      overflow: hidden;
-      height: 100%;
-      cursor: pointer;
-    }
-    .product-card img {
-      width: 100%;
-      height: auto;
-      transition: transform 0.3s ease, filter 0.3s ease;
-      border-radius: 10px;
-      display: block;
-    }
-    .product-price {
-      position: absolute;
-      bottom: 60px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(255, 111, 164, 0.8);
-      color: white;
-      padding: 8px 16px;
-      border-radius: 10px;
-      font-weight: bold;
-      font-size: 1.2rem;
-      opacity: 0;
-      transition: opacity 0.3s ease, transform 0.3s ease;
-    }
-    .add-to-cart-btn {
-      position: absolute;
-      bottom: 15px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #ff6fa4;
-      color: white;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 20px;
-      font-size: 0.9rem;
-      cursor: pointer;
-      opacity: 0;
-      transition: opacity 0.3s ease, transform 0.3s ease;
-    }
-    .product-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-    }
-    .product-card:hover img {
-      transform: scale(1.05);
-      filter: brightness(1.1);
-    }
-    .product-card:hover .product-price,
-    .product-card:hover .add-to-cart-btn {
-      opacity: 1;
-      transform: translateX(-50%) translateY(-5px);
-    }
-    .cart-bounce {
-      animation: bounce 0.6s ease;
-    }
-    @keyframes bounce {
-      0%   { transform: scale(1); }
-      30%  { transform: scale(1.3); }
-      60%  { transform: scale(0.9); }
-      100% { transform: scale(1); }
-    }
-    .flash-added {
-      animation: flash 0.5s ease-in-out;
-      background-color: #28a745 !important;
-    }
-    @keyframes flash {
-      0%   { background-color: #ff6fa4; }
-      50%  { background-color: #28a745; }
-      100% { background-color: #ff6fa4; }
-    }
+  
+    
   </style>
 </head>
 <body>
+
+<!-- E-commerce Navbar -->
 <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
   <div class="container">
+    <!-- Brand Logo -->
     <a class="navbar-brand fw-bold" href="#">
       <img src="images/logo.jpg" alt="Logo" width="35" height="35" class="rounded-circle me-2">
       HookcraftAvenue
     </a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
+
+    <!-- Hamburger Icon for Mobile -->
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent"
+      aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
+
+    <!-- Navbar Links + Icons -->
     <div class="collapse navbar-collapse" id="navbarContent">
+      <!-- Navigation Links -->
       <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
-        <li class="nav-item"><a class="nav-link active" href="index.html">Home</a></li>
+        <li class="nav-item"><a class="nav-link active" href="index.php">Home</a></li>
         <li class="nav-item"><a class="nav-link" href="shop.php">Shop</a></li>
-        <li class="nav-item"><a class="nav-link" href="about.html">About</a></li>
-        <li class="nav-item"><a class="nav-link" href="gallery.html">Gallery</a></li>
+        <li class="nav-item"><a class="nav-link" href="about.php">About</a></li>
+        <li class="nav-item"><a class="nav-link" href="gallery.php">Gallery</a></li>
         <li class="nav-item"><a class="nav-link" href="#">Contact</a></li>
       </ul>
-      <form class="d-flex me-3" role="search">
-        <input class="form-control form-control-sm me-2" type="search" placeholder="Search" aria-label="Search">
+
+      <!-- Search Bar -->
+            <form class="d-flex me-3" role="search">
+        <input type="text" id="searchInput" class="form-control" placeholder="Search products..." style="max-width: 250px;">
         <button class="btn btn-outline-secondary btn-sm" type="submit">Search</button>
       </form>
+
+      <!-- Cart & User Icons -->
       <ul class="navbar-nav flex-row">
         <li class="nav-item me-3">
           <a class="nav-link position-relative" href="cart.php">
             <i class="bi bi-cart fs-5"></i>
-            <span id="cart-icon-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-              <?php echo $cart_count; ?>
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+              
             </span>
           </a>
         </li>
@@ -160,6 +85,7 @@ $cart_count = count($_SESSION['cart']);
     </div>
   </div>
 </nav>
+
 
 <div class="container-fluid mt-4">
   <div class="row">
