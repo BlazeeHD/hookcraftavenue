@@ -14,11 +14,11 @@
   <!-- Custom Styles -->
   <link rel="stylesheet" href="styles.css" />
 </head>
-<style>
+<?php 
+include('login.php'); 
+include('signup.php'); 
+?>
 
-
- 
-</style>
 <body>
 
 <!-- E-commerce Navbar -->
@@ -215,46 +215,7 @@
 </section>
 
 
-<!-- Login Modal -->
-<div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
-    <form action="login.php" method="POST" class="modal-content p-4">
-      <h5 class="modal-title mb-3">Login</h5>
-      <div class="mb-3">
-        <input type="email" name="email" class="form-control" placeholder="Email" required>
-      </div>
-      <div class="mb-3">
-        <input type="password" name="password" class="form-control" placeholder="Password" required>
-      </div>
-      <div class="d-grid">
-        <button type="submit" class="btn btn-primary">Login</button>
-      </div>
-      <p class="mt-3 mb-0 text-center">No account? <a href="#" data-bs-toggle="modal" data-bs-target="#signupModal" data-bs-dismiss="modal">Sign Up</a></p>
-    </form>
-  </div>
-</div>
 
-<!-- Signup Modal -->
-<div class="modal fade" id="signupModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
-    <form action="signup.php" method="POST" class="modal-content p-4">
-      <h5 class="modal-title mb-3">Sign Up</h5>
-      <div class="mb-3">
-        <input type="text" name="name" class="form-control" placeholder="Full Name" required>
-      </div>
-      <div class="mb-3">
-        <input type="email" name="email" class="form-control" placeholder="Email" required>
-      </div>
-      <div class="mb-3">
-        <input type="password" name="password" class="form-control" placeholder="Password" required>
-      </div>
-      <div class="d-grid">
-        <button type="submit" class="btn btn-success">Create Account</button>
-      </div>
-      <p class="mt-3 mb-0 text-center">Already have an account? <a href="#" data-bs-toggle="modal" data-bs-target="#loginModal" data-bs-dismiss="modal">Login</a></p>
-    </form>
-  </div>
-</div>
 
 
   <!-- Footer -->
@@ -267,7 +228,7 @@
     </div>
   </footer>
 
-  <!-- Bootstrap JS -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
 </body>
 </html>
+
