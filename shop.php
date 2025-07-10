@@ -161,13 +161,6 @@ $cart_count = count($_SESSION['cart']);
   </div>
 </nav>
 
-<div class="container mt-3 d-flex justify-content-end align-items-center gap-2 flex-wrap">
-  <input type="text" id="searchInput" class="form-control" placeholder="Search products..." style="max-width: 250px;">
-  <a href="cart.php" class="btn btn-dark position-relative">
-    🛒 Cart <span id="cart-count" class="badge bg-light text-dark ms-1"><?php echo $cart_count; ?></span>
-  </a>
-</div>
-
 <div class="container-fluid mt-4">
   <div class="row">
     <aside class="col-md-3 sidebar">
