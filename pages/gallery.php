@@ -13,7 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Open+Sans&display=swap" rel="stylesheet" />
 
   <!-- Custom Styles -->
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="../asset/styles.css" />
 </head>
 <body>
 
@@ -23,7 +23,7 @@
   <div class="container">
     <!-- Brand Logo -->
     <a class="navbar-brand fw-bold" href="#">
-      <img src="images/logo.jpg" alt="Logo" width="35" height="35" class="rounded-circle me-2">
+      <img src="../images/logo.jpg" alt="Logo" width="35" height="35" class="rounded-circle me-2">
       HookcraftAvenue
     </a>
 
@@ -37,7 +37,7 @@
     <div class="collapse navbar-collapse" id="navbarContent">
       <!-- Navigation Links -->
       <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
-        <li class="nav-item"><a class="nav-link active" href="index.php">Home</a></li>
+        <li class="nav-item"><a class="nav-link active" href="../index.php">Home</a></li>
         <li class="nav-item"><a class="nav-link" href="shop.php">Shop</a></li>
         <li class="nav-item"><a class="nav-link" href="about.php">About</a></li>
         <li class="nav-item"><a class="nav-link" href="gallery.php">Gallery</a></li>

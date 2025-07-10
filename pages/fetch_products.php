@@ -1,5 +1,5 @@
 <?php
-include 'db.php';
+include '../includes/db.php';
 
 $category = $_GET['category'] ?? 'all';
 $search   = $_GET['search'] ?? '';

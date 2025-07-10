@@ -1,5 +1,5 @@
 <?php
-include 'db.php';
+include '../includes/db.php';
 session_start();
 
 if (!isset($_SESSION['cart'])) {
@@ -19,6 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['product_id'])) {
 
 $cart_count = count($_SESSION['cart']);
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -26,8 +27,8 @@ $cart_count = count($_SESSION['cart']);
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Flower Shop - Shop</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
-  <link rel="icon" href="images/logo.jpg" type="image/png">
+  <link rel="stylesheet" href="../asset/styles.css">
+  <link rel="icon" href="../images/logo.jpg" type="image/png">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
   <style>
   
@@ -41,7 +42,7 @@ $cart_count = count($_SESSION['cart']);
   <div class="container">
     <!-- Brand Logo -->
     <a class="navbar-brand fw-bold" href="#">
-      <img src="images/logo.jpg" alt="Logo" width="35" height="35" class="rounded-circle me-2">
+      <img src="../images/logo.jpg" alt="Logo" width="35" height="35" class="rounded-circle me-2">
       HookcraftAvenue
     </a>
 
@@ -55,7 +56,7 @@ $cart_count = count($_SESSION['cart']);
     <div class="collapse navbar-collapse" id="navbarContent">
       <!-- Navigation Links -->
       <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
-        <li class="nav-item"><a class="nav-link active" href="index.php">Home</a></li>
+        <li class="nav-item"><a class="nav-link active" href="../index.php">Home</a></li>
         <li class="nav-item"><a class="nav-link" href="shop.php">Shop</a></li>
         <li class="nav-item"><a class="nav-link" href="about.php">About</a></li>
         <li class="nav-item"><a class="nav-link" href="gallery.php">Gallery</a></li>
@@ -71,7 +72,7 @@ $cart_count = count($_SESSION['cart']);
       <!-- Cart & User Icons -->
       <ul class="navbar-nav flex-row">
         <li class="nav-item me-3">
-          <a class="nav-link position-relative" href="cart.php">
+          <a class="nav-link position-relative" href="../pages/cart.php">
             <i class="bi bi-cart fs-5"></i>
             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
               

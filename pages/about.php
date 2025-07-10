@@ -8,10 +8,10 @@
 
   <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
   <!-- AOS CSS -->
   <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet" />
-<link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="../asset/styles.css">
   <!-- Custom CSS -->
   <style>
 
@@ -24,7 +24,7 @@
   <div class="container">
     <!-- Brand Logo -->
     <a class="navbar-brand fw-bold" href="#">
-      <img src="images/logo.jpg" alt="Logo" width="35" height="35" class="rounded-circle me-2">
+      <img src="../images/logo.jpg" alt="Logo" width="35" height="35" class="rounded-circle me-2">
       HookcraftAvenue
     </a>
 
@@ -38,7 +38,7 @@
     <div class="collapse navbar-collapse" id="navbarContent">
       <!-- Navigation Links -->
       <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
-        <li class="nav-item"><a class="nav-link active" href="index.php">Home</a></li>
+        <li class="nav-item"><a class="nav-link active" href="../index.php">Home</a></li>
         <li class="nav-item"><a class="nav-link" href="shop.php">Shop</a></li>
         <li class="nav-item"><a class="nav-link" href="about.php">About</a></li>
         <li class="nav-item"><a class="nav-link" href="gallery.php">Gallery</a></li>
@@ -92,7 +92,7 @@
         </p>
       </div>
       <div class="about-gallery" style="margin-bottom: 150px;">
-        <img src="images/about1.jpg" alt="Gallery 1" />
+        <img src="../images/gallery1.jpg" alt="Gallery 1" />
         
       </div>
         
@@ -101,7 +101,7 @@
 
     <!-- Image Grid -->
     <section class="about-gallery-grid container text-center" data-aos="zoom-in-up">
-      <img src="images/gallery1.jpg" alt="Event 1" />
+      <img src="../images/gallery1.jpg" alt="Event 1" />
       <img src="images/about4.png" alt="Event 2" />
       <img src="images/about5.png" alt="Event 3" />
       <img src="images/about6.png" alt="Event 4" />
