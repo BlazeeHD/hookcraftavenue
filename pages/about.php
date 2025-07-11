@@ -101,17 +101,17 @@
 
     <!-- Image Grid -->
     <section class="about-gallery-grid container text-center" data-aos="zoom-in-up">
-      <img src="../images/gallery1.jpg" alt="Event 1" />
-      <img src="images/about4.png" alt="Event 2" />
-      <img src="images/about5.png" alt="Event 3" />
-      <img src="images/about6.png" alt="Event 4" />
+      <img src="../asset/images/gallery1.jpg" alt="Event 1" />
+      <img src="../asset/images/about4.png" alt="Event 2" />
+      <img src="../asset/images/about5.png" alt="Event 3" />
+      <img src="../asset/images/about6.png" alt="Event 4" />
     </section>
 
     <!-- Section 2 -->
     <section class="about-block container d-flex flex-column flex-md-row align-items-center reverse" data-aos="fade-left">
       <div class="about-gallery me-md-4">
-        <img src="images/about7.png" alt="Gallery 3" />
-        <img src="images/about8.png" alt="Gallery 4" />
+        <img src="../asset/images/about7.png" alt="Gallery 3" />
+        <img src="../asset/images/about8.png" alt="Gallery 4" />
       </div>
       <div class="about-text">
         <h2>What we do?</h2>
@@ -127,12 +127,12 @@
     <section class="testimonials" data-aos="fade-up">
       <h2 class="mb-4">What Our Customers Say</h2>
       <div class="testimonial-card">
-        <img src="images/avatar1.png" alt="Client 1" />
+        <img src="../asset/images/avatar1.png" alt="Client 1" />
         <h5>Anna Lopez</h5>
         <p>"Beautiful flowers and wonderful customer service! They made my anniversary extra special."</p>
       </div>
       <div class="testimonial-card">
-        <img src="images/avatar2.png" alt="Client 2" />
+        <img src="../asset/images/avatar2.png" alt="Client 2" />
         <h5>Jake Mendoza</h5>
         <p>"Highly recommend Hookcraft Avenue. Fast delivery and such elegant arrangements!"</p>
       </div>

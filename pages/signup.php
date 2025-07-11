@@ -1,5 +1,5 @@
 <?php
-include 'includes/db.php';
+include __DIR__ . '/../includes/db.php';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
   $name = $_POST['name'];
@@ -7,12 +7,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
   $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
 
   $stmt = $conn->prepare("INSERT INTO users (name, email, password) VALUES (?, ?, ?)");
+  if (!$stmt) {
+    die("Prepare failed: " . $conn->error);
+  }
   $stmt->bind_param("sss", $name, $email, $password);
 
   if ($stmt->execute()) {
-    echo "<script>alert('Signup successful! Please login.'); window.location.href='index.php';</script>";
+    echo "<script>alert('Signup successful! Please login.'); window.location.href='../index.php';</script>";
   } else {
-    echo "<script>alert('Signup failed: Email may already exist.'); window.location.href='index.php';</script>";
+    echo "<script>alert('Signup failed: Email may already exist.'); window.location.href='../index.php';</script>";
   }
 }
 ?>
@@ -28,14 +31,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <!-- Left Panel with Logo -->
         <div class="col-md-6 d-flex align-items-center justify-content-center" style="background-color: #fbd3e9;">
           <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 250px; height: 250px; background-color: #fcb3d7;">
-            <img src="../asset/images/logo.jpg" alt="Hookcraft Logo" style="width: 100%;">
+            <img src="/hookcraftavenue/asset/images/logo.jpg" alt="Hookcraft Logo" style="width: 100%;">
           </div>
         </div>
 
         <!-- Right Panel with Form -->
         <div class="col-md-6 p-4" style="background: url('https://www.transparenttextures.com/patterns/pw-maze-white.png') repeat; background-color: rgba(255,255,255,0.85);">
           <h3 class="text-center mb-4" style="font-weight: bold;">Sign Up</h3>
-          <form action="signup.php" method="POST">
+          <form action="../hookcraftavenue/pages/signup.php" method="POST">
             <div class="input-group mb-3">
               <span class="input-group-text"><i class="fas fa-user"></i></span>
               <input type="text" name="name" class="form-control" placeholder="Full Name" required>

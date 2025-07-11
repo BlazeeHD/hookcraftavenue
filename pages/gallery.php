@@ -81,28 +81,28 @@
     <h2 class="mb-4 text-center">Our Flower Gallery</h2>
     <div class="row g-3">
       <div class="col-6 col-md-4 col-lg-3">
-        <img src="images/gallery1.jpg" alt="Gallery 1" class="img-fluid rounded">
+        <img src="../asset/images/gallery1.jpg" alt="Gallery 1" class="img-fluid rounded">
       </div>
       <div class="col-6 col-md-4 col-lg-3">
-        <img src="images/gallery2.jpg" alt="Gallery 2" class="img-fluid rounded">
+        <img src="../asset/images/gallery2.jpg" alt="Gallery 2" class="img-fluid rounded">
       </div>
       <div class="col-6 col-md-4 col-lg-3">
-        <img src="images/gallery3.png" alt="Gallery 3" class="img-fluid rounded">
+        <img src="../asset/images/gallery3.png" alt="Gallery 3" class="img-fluid rounded">
       </div>
       <div class="col-6 col-md-4 col-lg-3">
-        <img src="images/gallery4.png" alt="Gallery 4" class="img-fluid rounded">
+        <img src="../asset/images/gallery4.png" alt="Gallery 4" class="img-fluid rounded">
       </div>
       <div class="col-6 col-md-4 col-lg-3">
-        <img src="images/gallery5.png" alt="Gallery 5" class="img-fluid rounded">
+        <img src="../asset/images/gallery5.png" alt="Gallery 5" class="img-fluid rounded">
       </div>
       <div class="col-6 col-md-4 col-lg-3">
-        <img src="images/gallery6.png" alt="Gallery 6" class="img-fluid rounded">
+        <img src="../asset/images/gallery6.png" alt="Gallery 6" class="img-fluid rounded">
       </div>
       <div class="col-6 col-md-4 col-lg-3">
-        <img src="images/gallery7.png" alt="Gallery 7" class="img-fluid rounded">
+        <img src="../asset/images/gallery7.png" alt="Gallery 7" class="img-fluid rounded">
       </div>
       <div class="col-6 col-md-4 col-lg-3">
-        <img src="images/gallery8.png" alt="Gallery 8" class="img-fluid rounded">
+        <img src="../asset/images/gallery8.png" alt="Gallery 8" class="img-fluid rounded">
       </div>
     </div>
   </div>

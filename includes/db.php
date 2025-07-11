@@ -1,11 +1,11 @@
 <?php
 $host = '127.0.0.1';
-$user = 'remote_root';
+$user = 'root';
 $pass = ''; // basta sa password ni db
 $dbname = 'flower_shop';
 $port = 3306; // Port number for MySQL, default is usually 3306
 
-$conn = new mysqli("127.0.0.1", "root", "", "flower_shop");
+$conn = new mysqli($host, $user,$pass,$dbname , $port);
 
 
 if ($conn->connect_error) {
