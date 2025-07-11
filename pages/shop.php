@@ -28,7 +28,7 @@ $cart_count = count($_SESSION['cart']);
   <title>Flower Shop - Shop</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="../asset/styles.css">
-  <link rel="icon" href="../images/logo.jpg" type="image/png">
+  <link rel="icon" href="../asset/images/logo.jpg" type="image/png">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
   <style>
   
@@ -42,7 +42,7 @@ $cart_count = count($_SESSION['cart']);
   <div class="container">
     <!-- Brand Logo -->
     <a class="navbar-brand fw-bold" href="#">
-      <img src="../images/logo.jpg" alt="Logo" width="35" height="35" class="rounded-circle me-2">
+      <img src="../asset/images/logo.jpg" alt="Logo" width="35" height="35" class="rounded-circle me-2">
       HookcraftAvenue
     </a>
 

@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Gallery - HookcraftAvenue</title>
-  <link rel="icon" href="images/logo.jpg" type="image/png">
+  <link rel="icon" href="../asset/images/logo.jpg" type="image/png">
 
   <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
@@ -23,7 +23,7 @@
   <div class="container">
     <!-- Brand Logo -->
     <a class="navbar-brand fw-bold" href="#">
-      <img src="../images/logo.jpg" alt="Logo" width="35" height="35" class="rounded-circle me-2">
+      <img src="../asset/images/logo.jpg" alt="Logo" width="35" height="35" class="rounded-circle me-2">
       HookcraftAvenue
     </a>
 

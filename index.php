@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Flower Shop - HookcraftAvenue</title>
-  <link rel="icon" href="asset/images/logo.jpg" type="image/png">
+  <link rel="icon" href="../asset/images/logo.jpg" type="image/png">
   <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
   
@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Open+Sans&display=swap" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
   
-  <link rel="stylesheet" href="asset/styles.css">
+  <link rel="stylesheet" href="../asset/styles.css">
 </head>
 <?php 
 include('pages/login.php'); 
@@ -26,7 +26,7 @@ include('pages/signup.php');
   <div class="container">
     <!-- Brand Logo -->
     <a class="navbar-brand fw-bold" href="#">
-      <img src="images/logo.jpg" alt="Logo" width="35" height="35" class="rounded-circle me-2">
+      <img src="../asset/images/logo.jpg" alt="Logo" width="35" height="35" class="rounded-circle me-2">
       HookcraftAvenue
     </a>
 
@@ -86,7 +86,7 @@ include('pages/signup.php');
         <p>Celebrate Beauty, one petal at a time.</p>
         <a href="shop.php" class="shop-now">Shop Now</a>
       </div>
-      <img src="images/hero-image.png" alt="Flower Hero" class="hero-img img-fluid mt-4 mt-md-0">
+      <img src="../asset/images/hero-image.png" alt="Flower Hero" class="hero-img img-fluid mt-4 mt-md-0">
     </div>
   </section>
 
@@ -96,15 +96,15 @@ include('pages/signup.php');
       <h1>Shop by Category</h1>
       <div class="category-grid">
         <div class="category-item">
-          <img src="images/birthday.jpg" alt="Birthday Bouquet">
+          <img src="../asset/images/birthday.jpg" alt="Birthday Bouquet">
           <h3>Birthday Bouquets</h3>
         </div>
         <div class="category-item">
-          <img src="images/casual.jpg" alt="Casual Bouquet">
+          <img src="../asset/images/casual.jpg" alt="Casual Bouquet">
           <h3>Casual Bouquets</h3>
         </div>
         <div class="category-item">
-          <img src="images/tiny.jpg" alt="Tiny Bouquets">
+          <img src="../asset/images/tiny.jpg" alt="Tiny Bouquets">
           <h3>Tiny Bouquets</h3>
         </div>
       </div>
@@ -121,8 +121,8 @@ include('pages/signup.php');
         </p>
       </div>
       <div class="about-image">
-        <img src="images/about-flower.jpg" alt="Flower 1" class="img-top">
-        <img src="images/about-flower1.jpg" alt="Flower 2" class="img-bottom">
+        <img src="../asset/images/about-flower.jpg" alt="Flower 1" class="img-top">
+        <img src="../asset/images/about-flower1.jpg" alt="Flower 2" class="img-bottom">
       </div>
     </div>
   </section>
@@ -133,56 +133,56 @@ include('pages/signup.php');
       <h2>Gallery</h2>
    <div class="gallery-grid">
   <div class="gallery-item">
-    <img src="images/gallery1.jpg" alt="Red Rose Delight">
+    <img src="../asset/images/gallery1.jpg" alt="Red Rose Delight">
     <div class="overlay">
       <strong>Red Rose Delight</strong><br>
       ₱899 – Elegant red roses arranged to express love and romance.
     </div>
   </div>
   <div class="gallery-item">
-    <img src="images/gallery2.jpg" alt="Sunshine Mix">
+    <img src="../asset/images/gallery2.jpg" alt="Sunshine Mix">
     <div class="overlay">
       <strong>Sunshine Mix</strong><br>
       ₱749 – Bright seasonal bouquet perfect for casual gifts.
     </div>
   </div>
   <div class="gallery-item">
-    <img src="images/gallery3.png" alt="Tiny Blossom">
+    <img src="../asset/images/gallery3.png" alt="Tiny Blossom">
     <div class="overlay">
       <strong>Tiny Blossom</strong><br>
       ₱399 – A petite bundle, great for small thoughtful surprises.
     </div>
   </div>
    <div class="gallery-item">
-    <img src="images/gallery4.png" alt="Tiny Blossom">
+    <img src="../asset/images/gallery4.png" alt="Tiny Blossom">
     <div class="overlay">
       <strong>Tiny Blossom</strong><br>
       ₱399 – A petite bundle, great for small thoughtful surprises.
     </div>
   </div>
    <div class="gallery-item">
-    <img src="images/gallery5.png" alt="Tiny Blossom">
+    <img src="../asset/images/gallery5.png" alt="Tiny Blossom">
     <div class="overlay">
       <strong>Tiny Blossom</strong><br>
       ₱399 – A petite bundle, great for small thoughtful surprises.
     </div>
   </div>
      <div class="gallery-item">
-    <img src="images/gallery6.png" alt="Tiny Blossom">
+    <img src="../asset/images/gallery6.png" alt="Tiny Blossom">
     <div class="overlay">
       <strong>Tiny Blossom</strong><br>
       ₱399 – A petite bundle, great for small thoughtful surprises.
     </div>
   </div>
      <div class="gallery-item">
-    <img src="images/gallery7.png" alt="Tiny Blossom">
+    <img src="../asset/images/gallery7.png" alt="Tiny Blossom">
     <div class="overlay">
       <strong>Tiny Blossom</strong><br>
       ₱399 – A petite bundle, great for small thoughtful surprises.
     </div>
   </div>
      <div class="gallery-item">
-    <img src="images/gallery8.png" alt="Tiny Blossom">
+    <img src="../asset/images/gallery8.png" alt="Tiny Blossom">
     <div class="overlay">
       <strong>Tiny Blossom</strong><br>
       ₱399 – A petite bundle, great for small thoughtful surprises.
@@ -201,13 +201,13 @@ include('pages/signup.php');
     <h2 class="fs-3 mb-4">Customize Your Own</h2>
     <div class="row justify-content-center g-3">
       <div class="col-4 col-sm-3 col-md-2">
-        <img src="images/custom1.png" alt="Customize 1" class="img-fluid rounded">
+        <img src="../asset/images/custom1.png" alt="Customize 1" class="img-fluid rounded">
       </div>
       <div class="col-4 col-sm-3 col-md-2">
-        <img src="images/custom2.png" alt="Customize 2" class="img-fluid rounded">
+        <img src="../asset/images/custom2.png" alt="Customize 2" class="img-fluid rounded">
       </div>
       <div class="col-4 col-sm-3 col-md-2">
-        <img src="images/custom3.png" alt="Customize 3" class="img-fluid rounded">
+        <img src="../asset/images/custom3.png" alt="Customize 3" class="img-fluid rounded">
       </div>
     </div>
     <a href="#" class="btn btn-sm mt-4" style="background-color: #ff6fa4; color: white; border-radius: 20px;">Customize Now</a>

@@ -28,7 +28,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <!-- Left Panel with Logo -->
         <div class="col-md-6 d-flex align-items-center justify-content-center" style="background-color: #fbd3e9;">
           <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 250px; height: 250px; background-color: #fcb3d7;">
-            <img src="images/logo.jpg" alt="Hookcraft Logo" style="width: 100%;">
+            <img src="../asset/images/logo.jpg" alt="Hookcraft Logo" style="width: 100%;">
           </div>
         </div>
 
