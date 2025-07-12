@@ -1,0 +1,89 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+body {
+  background: #333;
+  color: #fff;
+}
+
+.sidebar {
+  width: 80px;
+  height: 100vh;
+  background: #e7a8ba;
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 20px;
+}
+
+.sidebar .logo img {
+  width: 50px;
+  margin-bottom: 20px;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+  width: 100%;
+}
+
+.sidebar ul li {
+  text-align: center;
+  margin: 20px 0;
+}
+
+.sidebar ul li a {
+  color: white;
+  font-size: 20px;
+  display: block;
+}
+
+.header {
+  height: 60px;
+  background: #e3b4bd;
+  margin-left: 80px;
+  padding: 10px 20px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.header .profile img {
+  border-radius: 50%;
+  width: 30px;
+}
+
+.main-content {
+  margin-left: 80px;
+  margin-top: 60px;
+  padding: 20px;
+  background: #a88e94;
+  min-height: calc(100vh - 60px);
+}
+
+.card-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.card {
+  background: #fff;
+  color: #333;
+  padding: 20px;
+  border-radius: 10px;
+}
+
+.card.large {
+  grid-column: span 2;
+  min-height: 120px;
+}
+
+.card.small {
+  min-height: 80px;
+}
