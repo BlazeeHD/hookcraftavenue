@@ -21,7 +21,7 @@ include('pages/signup.php');
 
 <body>
 
-<!-- E-commerce Navbar -->
+<!-- E-commerce Navbar naol -->
 <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
   <div class="container">
     <!-- Brand Logo -->
