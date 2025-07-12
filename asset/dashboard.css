@@ -87,3 +87,50 @@ body {
 .card.small {
   min-height: 80px;
 }
+table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 12px 15px;
+      text-align: left;
+      border-bottom: 1px solid #ccc;
+    }
+
+    th {
+      background-color: #d18597;
+      color: white;
+      font-weight: 600;
+    }
+
+    td {
+      background-color: #f5d0d8;
+      color: #333;
+    }
+
+    .btn {
+      border: none;
+      padding: 6px 12px;
+      cursor: pointer;
+    }
+
+    .btn-success {
+      background-color: #28a745;
+      color: white;
+    }
+
+    .btn-danger {
+      background-color: #dc3545;
+      color: white;
+    }
+
+    h4 {
+      color: #444;
+      font-size: 22px;
+      margin-bottom: 15px;
+    }
+
+    .table-responsive {
+      overflow-x: auto;
+    }

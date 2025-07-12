@@ -3,47 +3,76 @@
 <head>
   <meta charset="UTF-8">
   <title>Users - Hookcraft Avenue</title>
-  <link rel="stylesheet" href="asset/dashboard.css">
+
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Font Awesome (for icons if needed) -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Custom Styles (Optional) -->
+  <link rel="stylesheet" href="../asset/dashboard.css">
 </head>
 <body>
 
-  <?php include 'includes/sidebar.php'; ?>
-  <?php include 'includes/header.php'; ?>
+  <?php include __DIR__ . '/sidebar.php'; ?>
+  <?php include __DIR__ . '/header.php'; ?>
 
-  <div class="main-content">
-    <div class="card">
-      <h4>User</h4>
-      <div class="table-responsive mt-3">
-        <table class="table table-bordered" style="background-color: #d39cab;">
-          <thead style="background-color: #f8dce2; color: white;">
-            <tr>
-              <th>id</th>
-              <th>Name</th>
-              <th>email</th>
-              <th>password</th>
-              <th>created at</th>
-              <th>action</th>
-            </tr>
-          </thead>
-          <tbody style="background-color: #e9b9c6;">
-            <tr>
-              <td>1</td>
-              <td>Marc</td>
-              <td>Marc@gmail.com</td>
-              <td>231651657413</td>
-              <td>08-12-2003</td>
-              <td>
-                <button class="btn btn-success btn-sm me-1" style="border-radius: 20px;">✔</button>
-                <button class="btn btn-danger btn-sm" style="border-radius: 20px;">✖</button>
-              </td>
-            </tr>
-            <!-- Add more user rows here -->
-          </tbody>
-        </table>
+  <!-- Main Content -->
+  <div class="main-content p-4">
+    <div class="card shadow-sm">
+      <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">User List</h5>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-bordered table-hover align-middle text-center">
+            <thead class="table-dark">
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Password</th>
+                <th>Created At</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php
+              include __DIR__ . '/../includes/db.php';
+              session_start();
+
+              $sql = "SELECT id, name, email, password, created_at FROM users";
+              $result = $conn->query($sql);
+
+              if ($result && $result->num_rows > 0) {
+                while ($row = $result->fetch_assoc()) {
+                  echo "<tr>";
+                  echo "<td>" . $row["id"] . "</td>";
+                  echo "<td>" . htmlspecialchars($row["name"]) . "</td>";
+                  echo "<td>" . htmlspecialchars($row["email"]) . "</td>";
+                  echo "<td>" . htmlspecialchars($row["password"]) . "</td>";
+                  echo "<td>" . date("F j, Y", strtotime($row["created_at"])) . "</td>";
+                  echo "<td>
+                          <button class='btn btn-success btn-sm'><i class='fas fa-check'></i></button>
+                          <button class='btn btn-danger btn-sm'><i class='fas fa-times'></i></button>
+                        </td>";
+                  echo "</tr>";
+                }
+              } else {
+                echo "<tr><td colspan='6' class='text-center text-muted'>No users found.</td></tr>";
+              }
+
+              $conn->close();
+              ?>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
 
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
