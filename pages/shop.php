@@ -8,12 +8,24 @@ if (!isset($_SESSION['cart'])) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['product_id'])) {
   $pid = $_POST['product_id'];
-  if (isset($_SESSION['cart'][$pid])) {
-    $_SESSION['cart'][$pid]++;
+
+  // Get current stock from database
+  $stock_query = $conn->prepare("SELECT stock FROM products WHERE id = ?");
+  $stock_query->bind_param("i", $pid);
+  $stock_query->execute();
+  $stock_query->bind_result($productStock);
+  $stock_query->fetch();
+  $stock_query->close();
+
+  // Get current cart quantity
+  $cart_qty = isset($_SESSION['cart'][$pid]) ? $_SESSION['cart'][$pid] : 0;
+
+  if ($cart_qty < $productStock) {
+    $_SESSION['cart'][$pid] = $cart_qty + 1;
+    echo count($_SESSION['cart']);
   } else {
-    $_SESSION['cart'][$pid] = 1;
+    echo "max"; // Signal to JS that max stock reached
   }
-  echo count($_SESSION['cart']);
   exit;
 }
 
@@ -31,8 +43,21 @@ $cart_count = count($_SESSION['cart']);
   <link rel="icon" href="../asset/images/logo.jpg" type="image/png">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
   <style>
-  
-
+  .cart-bounce {
+  animation: bounce 0.6s;
+}
+@keyframes bounce {
+  0%   { transform: scale(1); }
+  30%  { transform: scale(1.3); }
+  50%  { transform: scale(0.9); }
+  70%  { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+.flash-added {
+  background: #d63384 !important;
+  color: #fff !important;
+  transition: background 0.3s;
+}
   </style>
 </head>
 <body>
@@ -74,9 +99,10 @@ $cart_count = count($_SESSION['cart']);
         <li class="nav-item me-3">
           <a class="nav-link position-relative" href="../pages/cart.php">
             <i class="bi bi-cart fs-5"></i>
-            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-              
+            <span id="cart-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+              <?= $cart_count ?>
             </span>
+            <span id="cart-icon-badge" style="display:none"></span>
           </a>
         </li>
         <li class="nav-item">
@@ -146,6 +172,9 @@ $cart_count = count($_SESSION['cart']);
   </div>
 </div>
 
+<!-- Notification for add to cart -->
+<div id="cart-notify" style="display:none;position:fixed;top:80px;right:30px;z-index:9999;" class="alert alert-success shadow">Added to cart!</div>
+
 <footer class="footer mt-5 text-center">
   <p>&copy; 2025 Hookcraft Avenue. All rights reserved.</p>
 </footer>
@@ -184,14 +213,24 @@ $cart_count = count($_SESSION['cart']);
       })
       .then(res => res.text())
       .then(data => {
-        cartCount.innerText = data;
-        cartIconBadge.innerText = data;
-        cartCount.classList.add('cart-bounce');
-        cartIconBadge.classList.add('cart-bounce');
+        if (data === "max") {
+          alert("You have reached the maximum stock for this product.");
+          return;
+        }
+        // Show notification
+        const notify = document.getElementById('cart-notify');
+        notify.style.display = 'block';
+        notify.classList.add('cart-bounce');
         setTimeout(() => {
-          cartCount.classList.remove('cart-bounce');
-          cartIconBadge.classList.remove('cart-bounce');
-        }, 600);
+          notify.style.display = 'none';
+          notify.classList.remove('cart-bounce');
+        }, 1000);
+
+        // Animate cart badge and update number
+        cartCount.innerText = data;
+        cartCount.classList.add('cart-bounce');
+        setTimeout(() => cartCount.classList.remove('cart-bounce'), 600);
+
         thisButton.classList.add('flash-added');
         setTimeout(() => thisButton.classList.remove('flash-added'), 500);
       });
@@ -199,18 +238,17 @@ $cart_count = count($_SESSION['cart']);
   });
 
   const priceSlider = document.getElementById('priceRange');
-const maxPriceText = document.getElementById('maxPrice');
+  const maxPriceText = document.getElementById('maxPrice');
 
-priceSlider.addEventListener('input', function () {
-  const maxPrice = parseInt(this.value);
-  maxPriceText.textContent = maxPrice;
+  priceSlider.addEventListener('input', function () {
+    const maxPrice = parseInt(this.value);
+    maxPriceText.textContent = maxPrice;
 
-  document.querySelectorAll('.product-item').forEach(item => {
-    const itemPrice = parseFloat(item.dataset.price);
-    item.style.display = (itemPrice <= maxPrice) ? 'block' : 'none';
+    document.querySelectorAll('.product-item').forEach(item => {
+      const itemPrice = parseFloat(item.dataset.price);
+      item.style.display = (itemPrice <= maxPrice) ? 'block' : 'none';
+    });
   });
-});
-
 
   window.addEventListener('DOMContentLoaded', () => {
     priceSlider.value = 1000;

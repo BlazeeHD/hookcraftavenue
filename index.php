@@ -15,13 +15,19 @@
   <link rel="stylesheet" href="../hookcraftavenue/asset/styles.css">
 </head>
 <?php 
+
 include('pages/login.php'); 
 include('pages/signup.php'); 
+
+if (!isset($_SESSION['cart'])) {
+  $_SESSION['cart'] = [];
+}
+$cart_count = count($_SESSION['cart']);
 ?>
 
 <body>
 
-<!-- E-commerce Navbar naol -->
+<!-- E-commerce Navbar -->
 <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
   <div class="container">
     <!-- Brand Logo -->
@@ -40,15 +46,15 @@ include('pages/signup.php');
     <div class="collapse navbar-collapse" id="navbarContent">
       <!-- Navigation Links -->
       <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
-        <li class="nav-item"><a class="nav-link active" href="index.php">Home</a></li>
-        <li class="nav-item"><a class="nav-link" href="pages/shop.php">Shop</a></li>
-        <li class="nav-item"><a class="nav-link" href="pages/about.php">About</a></li>
-        <li class="nav-item"><a class="nav-link" href="pages/gallery.php">Gallery</a></li>
+        <li class="nav-item"><a class="nav-link active" href="../index.php">Home</a></li>
+        <li class="nav-item"><a class="nav-link" href="../hookcraftavenue/pages/shop.php">Shop</a></li>
+        <li class="nav-item"><a class="nav-link" href="../hookcraftavenue/pages/about.php">About</a></li>
+        <li class="nav-item"><a class="nav-link" href="../hookcraftavenue/pages/gallery.php">Gallery</a></li>
         <li class="nav-item"><a class="nav-link" href="#">Contact</a></li>
       </ul>
 
       <!-- Search Bar -->
-              <form class="d-flex me-3" role="search">
+      <form class="d-flex me-3" role="search">
         <input type="text" id="searchInput" class="form-control" placeholder="Search products..." style="max-width: 250px;">
         <button class="btn btn-outline-secondary btn-sm" type="submit">Search</button>
       </form>
@@ -56,18 +62,18 @@ include('pages/signup.php');
       <!-- Cart & User Icons -->
       <ul class="navbar-nav flex-row">
         <li class="nav-item me-3">
-          <a class="nav-link position-relative" href="pages/cart.php">
+          <a class="nav-link position-relative" href="../hookcraftavenue/pages/cart.php">
             <i class="bi bi-cart fs-5"></i>
-            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-              
+            <span id="cart-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+              <?php echo isset($cart_count) ? $cart_count : 0; ?>
             </span>
+            <span id="cart-icon-badge" style="display:none"></span>
           </a>
         </li>
         <li class="nav-item">
           <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#loginModal">
-        <i class="bi bi-person fs-5"></i>
-        </a>
-
+            <i class="bi bi-person fs-5"></i>
+          </a>
         </li>
       </ul>
     </div>
@@ -210,7 +216,7 @@ include('pages/signup.php');
         <img src="../hookcraftavenue/asset/images/custom3.png" alt="Customize 3" class="img-fluid rounded">
       </div>
     </div>
-    <a href="#" class="btn btn-sm mt-4" style="background-color: #ff6fa4; color: white; border-radius: 20px;">Customize Now</a>
+    <a href="../hookcraftavenue/pages/customization.php" class="btn btn-sm mt-4" style="background-color: #ff6fa4; color: white; border-radius: 20px;">Customize Now</a>
   </div>
 </section>
 

@@ -1,3 +1,10 @@
+<?php
+session_start();
+if (!isset($_SESSION['cart'])) {
+  $_SESSION['cart'] = [];
+}
+$cart_count = count($_SESSION['cart']);
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -45,7 +52,7 @@
       </ul>
 
       <!-- Search Bar -->
-              <form class="d-flex me-3" role="search">
+      <form class="d-flex me-3" role="search">
         <input type="text" id="searchInput" class="form-control" placeholder="Search products..." style="max-width: 250px;">
         <button class="btn btn-outline-secondary btn-sm" type="submit">Search</button>
       </form>
@@ -55,16 +62,16 @@
         <li class="nav-item me-3">
           <a class="nav-link position-relative" href="cart.php">
             <i class="bi bi-cart fs-5"></i>
-            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-              
+            <span id="cart-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+              <?php echo isset($cart_count) ? $cart_count : 0; ?>
             </span>
+            <span id="cart-icon-badge" style="display:none"></span>
           </a>
         </li>
         <li class="nav-item">
           <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#loginModal">
-        <i class="bi bi-person fs-5"></i>
-        </a>
-
+            <i class="bi bi-person fs-5"></i>
+          </a>
         </li>
       </ul>
     </div>
