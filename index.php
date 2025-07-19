@@ -33,7 +33,7 @@ $cart_count = count($_SESSION['cart']);
   <div class="container">
     <!-- Brand Logo -->
     <a class="navbar-brand fw-bold" href="#">
-      <img src="../hookcraftavenue/asset/images/logo.jpg" alt="Logo" width="35" height="35" class="rounded-circle me-2">
+      <img src="../asset/images/logo.jpg" alt="Logo" width="35" height="35" class="rounded-circle me-2">
       HookcraftAvenue
     </a>
 
@@ -48,9 +48,9 @@ $cart_count = count($_SESSION['cart']);
       <!-- Navigation Links -->
       <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
         <li class="nav-item"><a class="nav-link active" href="../index.php">Home</a></li>
-        <li class="nav-item"><a class="nav-link" href="../hookcraftavenue/pages/shop.php">Shop</a></li>
-        <li class="nav-item"><a class="nav-link" href="../hookcraftavenue/pages/about.php">About</a></li>
-        <li class="nav-item"><a class="nav-link" href="../hookcraftavenue/pages/gallery.php">Gallery</a></li>
+        <li class="nav-item"><a class="nav-link" href="../pages/shop.php">Shop</a></li>
+        <li class="nav-item"><a class="nav-link" href="../pages/about.php">About</a></li>
+        <li class="nav-item"><a class="nav-link" href="../pages/gallery.php">Gallery</a></li>
         <li class="nav-item"><a class="nav-link" href="#">Contact</a></li>
       </ul>
 
@@ -63,7 +63,7 @@ $cart_count = count($_SESSION['cart']);
       <!-- Cart & User Icons -->
       <ul class="navbar-nav flex-row">
         <li class="nav-item me-3">
-          <a class="nav-link position-relative" href="../hookcraftavenue/pages/cart.php">
+          <a class="nav-link position-relative" href="../pages/cart.php">
             <i class="bi bi-cart fs-5"></i>
             <span id="cart-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
               <?php echo isset($cart_count) ? $cart_count : 0; ?>
@@ -93,7 +93,7 @@ $cart_count = count($_SESSION['cart']);
         <p>Celebrate Beauty, one petal at a time.</p>
         <a href="shop.php" class="shop-now">Shop Now</a>
       </div>
-      <img src="../hookcraftavenue/asset/images/hero-image.png" alt="Flower Hero" class="hero-img img-fluid mt-4 mt-md-0">
+      <img src="../asset/images/hero-image.png" alt="Flower Hero" class="hero-img img-fluid mt-4 mt-md-0">
     </div>
   </section>
 
@@ -103,15 +103,15 @@ $cart_count = count($_SESSION['cart']);
       <h1>Shop by Category</h1>
       <div class="category-grid">
         <div class="category-item">
-          <img src="../hookcraftavenue/asset/images/birthday.jpg" alt="Birthday Bouquet">
+          <img src="../asset/images/birthday.jpg" alt="Birthday Bouquet">
           <h3>Birthday Bouquets</h3>
         </div>
         <div class="category-item">
-          <img src="../hookcraftavenue/asset/images/casual.jpg" alt="Casual Bouquet">
+          <img src="../asset/images/casual.jpg" alt="Casual Bouquet">
           <h3>Casual Bouquets</h3>
         </div>
         <div class="category-item">
-          <img src="../hookcraftavenue/asset/images/tiny.jpg" alt="Tiny Bouquets">
+          <img src="../asset/images/tiny.jpg" alt="Tiny Bouquets">
           <h3>Tiny Bouquets</h3>
         </div>
       </div>
@@ -128,8 +128,8 @@ $cart_count = count($_SESSION['cart']);
         </p>
       </div>
       <div class="about-image">
-        <img src="../hookcraftavenue/asset/images/about-flower.jpg" alt="Flower 1" class="img-top">
-        <img src="../hookcraftavenue/asset/images/about-flower1.jpg" alt="Flower 2" class="img-bottom">
+        <img src="../asset/images/about-flower.jpg" alt="Flower 1" class="img-top">
+        <img src="../asset/images/about-flower1.jpg" alt="Flower 2" class="img-bottom">
       </div>
     </div>
   </section>
@@ -140,7 +140,7 @@ $cart_count = count($_SESSION['cart']);
       <h2>Gallery</h2>
    <div class="gallery-grid">
   <div class="gallery-item">
-    <img src="../hookcraftavenue/asset/images/gallery1.jpg" alt="Red Rose Delight">
+    <img src="../asset/images/gallery1.jpg" alt="Red Rose Delight">
     <div class="overlay">
       <strong>Red Rose Delight</strong><br>
       ₱899 – Elegant red roses arranged to express love and romance.
