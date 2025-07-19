@@ -40,7 +40,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <!-- Left Panel with Logo -->
         <div class="col-md-6 d-flex align-items-center justify-content-center" style="background-color: #fbd3e9;">
           <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 250px; height: 250px; background-color: #fcb3d7;">
-            <img src="/hookcraftavenue/asset/images/logo.jpg" alt="Hookcraft Logo" style="width: 100%;">
+            <img src="asset/images/logo.jpg" alt="Hookcraft Logo" style="width: 100%;">
             <!-- Replace with actual logo -->
           </div>
         </div>
@@ -48,7 +48,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <!-- Right Panel with Form -->
         <div class="col-md-6 p-4" style="background: url('https://www.transparenttextures.com/patterns/pw-maze-white.png') repeat; background-color: rgba(255,255,255,0.85);">
           <h3 class="text-center mb-4" style="font-weight: bold;">Log In</h3>
-          <form action="../hookcraftavenue/pages/login.php" method="POST">
+          <form action="pages/login.php" method="POST">
             <div class="input-group mb-3">
               <span class="input-group-text"><i class="fas fa-user"></i></span>
               <input type="email" class="form-control" name="email" placeholder="Email" required>

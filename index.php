@@ -13,7 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Open+Sans&display=swap" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
   
-  <link rel="stylesheet" href="../asset/styles.css">
+  <link rel="stylesheet" href="asset/styles.css">
 </head>
 <?php 
 
@@ -33,7 +33,7 @@ $cart_count = count($_SESSION['cart']);
   <div class="container">
     <!-- Brand Logo -->
     <a class="navbar-brand fw-bold" href="#">
-      <img src="../asset/images/logo.jpg" alt="Logo" width="35" height="35" class="rounded-circle me-2">
+      <img src="asset/images/logo.jpg" alt="Logo" width="35" height="35" class="rounded-circle me-2">
       HookcraftAvenue
     </a>
 
@@ -48,9 +48,9 @@ $cart_count = count($_SESSION['cart']);
       <!-- Navigation Links -->
       <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
         <li class="nav-item"><a class="nav-link active" href="../index.php">Home</a></li>
-        <li class="nav-item"><a class="nav-link" href="../pages/shop.php">Shop</a></li>
-        <li class="nav-item"><a class="nav-link" href="../pages/about.php">About</a></li>
-        <li class="nav-item"><a class="nav-link" href="../pages/gallery.php">Gallery</a></li>
+        <li class="nav-item"><a class="nav-link" href="pages/shop.php">Shop</a></li>
+        <li class="nav-item"><a class="nav-link" href="pages/about.php">About</a></li>
+        <li class="nav-item"><a class="nav-link" href="pages/gallery.php">Gallery</a></li>
         <li class="nav-item"><a class="nav-link" href="#">Contact</a></li>
       </ul>
 
@@ -63,7 +63,7 @@ $cart_count = count($_SESSION['cart']);
       <!-- Cart & User Icons -->
       <ul class="navbar-nav flex-row">
         <li class="nav-item me-3">
-          <a class="nav-link position-relative" href="../pages/cart.php">
+          <a class="nav-link position-relative" href="pages/cart.php">
             <i class="bi bi-cart fs-5"></i>
             <span id="cart-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
               <?php echo isset($cart_count) ? $cart_count : 0; ?>
@@ -91,9 +91,9 @@ $cart_count = count($_SESSION['cart']);
       <div class="hero-content">
         <h1>Elevate your moments with our handcrafted floral creations</h1>
         <p>Celebrate Beauty, one petal at a time.</p>
-        <a href="shop.php" class="shop-now">Shop Now</a>
+        <a href="pages/shop.php" class="shop-now">Shop Now</a>
       </div>
-      <img src="../asset/images/hero-image.png" alt="Flower Hero" class="hero-img img-fluid mt-4 mt-md-0">
+      <img src="asset/images/hero-image.png" alt="Flower Hero" class="hero-img img-fluid mt-4 mt-md-0">
     </div>
   </section>
 
@@ -103,15 +103,15 @@ $cart_count = count($_SESSION['cart']);
       <h1>Shop by Category</h1>
       <div class="category-grid">
         <div class="category-item">
-          <img src="../asset/images/birthday.jpg" alt="Birthday Bouquet">
+          <img src="asset/images/birthday.jpg" alt="Birthday Bouquet">
           <h3>Birthday Bouquets</h3>
         </div>
         <div class="category-item">
-          <img src="../asset/images/casual.jpg" alt="Casual Bouquet">
+          <img src="asset/images/casual.jpg" alt="Casual Bouquet">
           <h3>Casual Bouquets</h3>
         </div>
         <div class="category-item">
-          <img src="../asset/images/tiny.jpg" alt="Tiny Bouquets">
+          <img src="asset/images/tiny.jpg" alt="Tiny Bouquets">
           <h3>Tiny Bouquets</h3>
         </div>
       </div>
@@ -128,8 +128,8 @@ $cart_count = count($_SESSION['cart']);
         </p>
       </div>
       <div class="about-image">
-        <img src="../asset/images/about-flower.jpg" alt="Flower 1" class="img-top">
-        <img src="../asset/images/about-flower1.jpg" alt="Flower 2" class="img-bottom">
+        <img src="asset/images/about-flower.jpg" alt="Flower 1" class="img-top">
+        <img src="asset/images/about-flower1.jpg" alt="Flower 2" class="img-bottom">
       </div>
     </div>
   </section>
@@ -140,56 +140,56 @@ $cart_count = count($_SESSION['cart']);
       <h2>Gallery</h2>
    <div class="gallery-grid">
   <div class="gallery-item">
-    <img src="../asset/images/gallery1.jpg" alt="Red Rose Delight">
+    <img src="asset/images/gallery1.jpg" alt="Red Rose Delight">
     <div class="overlay">
       <strong>Red Rose Delight</strong><br>
       ₱899 – Elegant red roses arranged to express love and romance.
     </div>
   </div>
   <div class="gallery-item">
-    <img src="../hookcraftavenue/asset/images/gallery2.jpg" alt="Sunshine Mix">
+    <img src="asset/images/gallery2.jpg" alt="Sunshine Mix">
     <div class="overlay">
       <strong>Sunshine Mix</strong><br>
       ₱749 – Bright seasonal bouquet perfect for casual gifts.
     </div>
   </div>
   <div class="gallery-item">
-    <img src="../hookcraftavenue/asset/images/gallery3.png" alt="Tiny Blossom">
+    <img src="asset/images/gallery3.png" alt="Tiny Blossom">
     <div class="overlay">
       <strong>Tiny Blossom</strong><br>
       ₱399 – A petite bundle, great for small thoughtful surprises.
     </div>
   </div>
    <div class="gallery-item">
-    <img src="../hookcraftavenue/asset/images/gallery4.png" alt="Tiny Blossom">
+    <img src="asset/images/gallery4.png" alt="Tiny Blossom">
     <div class="overlay">
       <strong>Tiny Blossom</strong><br>
       ₱399 – A petite bundle, great for small thoughtful surprises.
     </div>
   </div>
    <div class="gallery-item">
-    <img src="../hookcraftavenue/asset/images/gallery5.png" alt="Tiny Blossom">
+    <img src="asset/images/gallery5.png" alt="Tiny Blossom">
     <div class="overlay">
       <strong>Tiny Blossom</strong><br>
       ₱399 – A petite bundle, great for small thoughtful surprises.
     </div>
   </div>
      <div class="gallery-item">
-    <img src="../hookcraftavenue/asset/images/gallery6.png" alt="Tiny Blossom">
+    <img src="asset/images/gallery6.png" alt="Tiny Blossom">
     <div class="overlay">
       <strong>Tiny Blossom</strong><br>
       ₱399 – A petite bundle, great for small thoughtful surprises.
     </div>
   </div>
      <div class="gallery-item">
-    <img src="../hookcraftavenue/asset/images/gallery7.png" alt="Tiny Blossom">
+    <img src="asset/images/gallery7.png" alt="Tiny Blossom">
     <div class="overlay">
       <strong>Tiny Blossom</strong><br>
       ₱399 – A petite bundle, great for small thoughtful surprises.
     </div>
   </div>
      <div class="gallery-item">
-    <img src="../hookcraftavenue/asset/images/gallery8.png" alt="Tiny Blossom">
+    <img src="asset/images/gallery8.png" alt="Tiny Blossom">
     <div class="overlay">
       <strong>Tiny Blossom</strong><br>
       ₱399 – A petite bundle, great for small thoughtful surprises.
@@ -208,16 +208,16 @@ $cart_count = count($_SESSION['cart']);
     <h2 class="fs-3 mb-4">Customize Your Own</h2>
     <div class="row justify-content-center g-3">
       <div class="col-4 col-sm-3 col-md-2">
-        <img src="../hookcraftavenue/asset/images/custom1.png" alt="Customize 1" class="img-fluid rounded">
+        <img src="asset/images/custom1.png" alt="Customize 1" class="img-fluid rounded">
       </div>
       <div class="col-4 col-sm-3 col-md-2">
-        <img src="../hookcraftavenue/asset/images/custom2.png" alt="Customize 2" class="img-fluid rounded">
+        <img src="asset/images/custom2.png" alt="Customize 2" class="img-fluid rounded">
       </div>
       <div class="col-4 col-sm-3 col-md-2">
-        <img src="../hookcraftavenue/asset/images/custom3.png" alt="Customize 3" class="img-fluid rounded">
+        <img src="asset/images/custom3.png" alt="Customize 3" class="img-fluid rounded">
       </div>
     </div>
-    <a href="../hookcraftavenue/pages/customization.php" class="btn btn-sm mt-4" style="background-color: #ff6fa4; color: white; border-radius: 20px;">Customize Now</a>
+    <a href="pages/customization.php" class="btn btn-sm mt-4" style="background-color: #ff6fa4; color: white; border-radius: 20px;">Customize Now</a>
   </div>
 </section>
 
