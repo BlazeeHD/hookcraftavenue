@@ -16,7 +16,7 @@
   <link rel="stylesheet" href="asset/styles.css">
 </head>
 <?php 
-
+session_start();
 include('pages/login.php'); 
 include('pages/signup.php'); 
 
@@ -24,6 +24,10 @@ if (!isset($_SESSION['cart'])) {
   $_SESSION['cart'] = [];
 }
 $cart_count = count($_SESSION['cart']);
+
+// Check if user is logged in
+$isLoggedIn = isset($_SESSION['user_id']);
+$userName = $_SESSION['user_name'] ?? '';
 ?>
 
 <body>
@@ -71,11 +75,24 @@ $cart_count = count($_SESSION['cart']);
             <span id="cart-icon-badge" style="display:none"></span>
           </a>
         </li>
-        <li class="nav-item">
-          <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#loginModal">
-            <i class="bi bi-person fs-5"></i>
-          </a>
-        </li>
+        <?php if ($isLoggedIn): ?>
+          <li class="nav-item">
+            <a class="nav-link" href="pages/profile.php">
+              <i class="bi bi-person-circle fs-5"></i> <?php echo htmlspecialchars($userName); ?>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="pages/logout.php">
+              <i class="bi bi-box-arrow-right fs-5"></i> Logout
+            </a>
+          </li>
+        <?php else: ?>
+          <li class="nav-item">
+            <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#loginModal">
+              <i class="bi bi-person fs-5"></i>
+            </a>
+          </li>
+        <?php endif; ?>
       </ul>
     </div>
   </div>
