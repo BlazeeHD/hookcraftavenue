@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_checkout'])) 
 
   if ($name && $address && $phone && !empty($cart_items)) {
     $stmt = $conn->prepare("INSERT INTO orders (customer_name, address, phone, total, payment_method, payment_status) VALUES (?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("sssdds", $name, $address, $phone, $total, $payment_method, $payment_status);
+    $stmt->bind_param("ssssss", $name, $address, $phone, $total, $payment_method, $payment_status);
     $stmt->execute();
     $order_id = $stmt->insert_id;
 

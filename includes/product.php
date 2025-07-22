@@ -1,188 +1,209 @@
 <?php
-include __DIR__ . '/sidebar.php';
-include __DIR__ . '/header.php';
 include __DIR__ . '/../includes/db.php';
 session_start();
 
-// Handle product deletion
+// Handle Add Product
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_product'])) {
+  $name = $_POST['name'];
+  $category = $_POST['category'];
+  $price = $_POST['price'];
+  $stock = $_POST['stock'];
+  $imageName = $_FILES['image']['name'];
+  $imagePath = __DIR__ . '/../uploads/' . $imageName;
+
+  if (move_uploaded_file($_FILES['image']['tmp_name'], $imagePath)) {
+    $stmt = $conn->prepare("INSERT INTO products (name, category, price, stock, image) VALUES (?, ?, ?, ?, ?)");
+    $stmt->bind_param("ssdis", $name, $category, $price, $stock, $imageName);
+    $stmt->execute();
+  }
+}
+
+// Handle Edit Product
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_product'])) {
+  $id = $_POST['product_id'];
+  $name = $_POST['name'];
+  $category = $_POST['category'];
+  $price = $_POST['price'];
+  $stock = $_POST['stock'];
+  $imageSql = "";
+  $params = [];
+
+  if (!empty($_FILES['image']['name'])) {
+    $imageName = $_FILES['image']['name'];
+    $imagePath = __DIR__ . '/../uploads/' . $imageName;
+    if (move_uploaded_file($_FILES['image']['tmp_name'], $imagePath)) {
+      $imageSql = ", image=?";
+    }
+  }
+
+  $query = "UPDATE products SET name=?, category=?, price=?, stock=? $imageSql WHERE id=?";
+  if ($imageSql) {
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("ssdisi", $name, $category, $price, $stock, $imageName, $id);
+  } else {
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("ssdis", $name, $category, $price, $stock, $id);
+  }
+  $stmt->execute();
+}
+
+// Handle Delete Product
 if (isset($_GET['delete'])) {
   $id = $_GET['delete'];
   $stmt = $conn->prepare("DELETE FROM products WHERE id = ?");
   $stmt->bind_param("i", $id);
   $stmt->execute();
-  $_SESSION['message'] = "Product deleted successfully.";
-  header("Location: product.php");
-  exit();
 }
-
-// Handle product addition
-if (isset($_POST['add_product'])) {
-  $name = $_POST['name'];
-  $category = $_POST['category'];
-  $price = $_POST['price'];
-  $image = $_POST['image'];
-  $stock = $_POST['stock'];
-  $stmt = $conn->prepare("INSERT INTO products (name, category, price, image, stock) VALUES (?, ?, ?, ?, ?)");
-  $stmt->bind_param("ssdsi", $name, $category, $price, $image, $stock);
-  $stmt->execute();
-  $_SESSION['message'] = "Product added successfully.";
-  header("Location: product.php");
-  exit();
-}
-
-// Handle product update
-if (isset($_POST['update_product'])) {
-  $id = $_POST['id'];
-  $name = $_POST['name'];
-  $category = $_POST['category'];
-  $price = $_POST['price'];
-  $image = $_POST['image'];
-  $stock = $_POST['stock'];
-  $stmt = $conn->prepare("UPDATE products SET name=?, category=?, price=?, image=?, stock=? WHERE id=?");
-  $stmt->bind_param("ssdsii", $name, $category, $price, $image, $stock, $id);
-  $stmt->execute();
-  $_SESSION['message'] = "Product updated successfully.";
-  header("Location: product.php");
-  exit();
-}
-
-// Search functionality
-$search = isset($_GET['search']) ? $_GET['search'] : '';
-$sql = "SELECT * FROM products WHERE name LIKE ? ORDER BY id DESC";
-$stmt = $conn->prepare($sql);
-$searchTerm = "%$search%";
-$stmt->bind_param("s", $searchTerm);
-$stmt->execute();
-$result = $stmt->get_result();
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Product Management</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="../asset/css/admin.css">
-  <style>
-    .product-img { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; }
-    .table-danger { background-color: #f8d7da !important; }
-    .form-section { background: #f1f1f1; padding: 15px; border-radius: 10px; margin-bottom: 20px; }
-  </style>
+  <title>Products - Hookcraft Avenue</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="../asset/dashboard.css">
 </head>
 <body>
 
-<main class="main-content">
-  <div class="container-fluid py-4">
-    <h4 class="mb-4">Product Management</h4>
+<?php include __DIR__ . '/sidebar.php'; ?>
+<?php include __DIR__ . '/header.php'; ?>
 
-    <?php if (isset($_SESSION['message'])): ?>
-      <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <?php 
-          echo $_SESSION['message']; 
-          unset($_SESSION['message']);
-        ?>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+<div class="main-content p-4">
+  <div class="card shadow-sm">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">Product List</h5>
+      <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#addModal"><i class="fas fa-plus"></i> Add Product</button>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover align-middle text-center">
+          <thead class="table-dark">
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Category</th>
+              <th>Price (₱)</th>
+              <th>Stock</th>
+              <th>Image</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+          <?php
+          $result = $conn->query("SELECT * FROM products ORDER BY id DESC");
+          while ($row = $result->fetch_assoc()):
+            $id = $row['id'];
+            $editModalId = "editModal$id";
+          ?>
+            <tr>
+              <td><?= $id ?></td>
+              <td><?= htmlspecialchars($row['name']) ?></td>
+              <td><?= htmlspecialchars($row['category']) ?></td>
+              <td>₱<?= number_format($row['price'], 2) ?></td>
+              <td><?= $row['stock'] ?></td>
+              <td>
+                <?php if ($row['image']): ?>
+                  <img src="../uploads/<?= htmlspecialchars($row['image']) ?>" width="50" class="rounded">
+                <?php else: ?>
+                  <span class="text-muted">No Image</span>
+                <?php endif; ?>
+              </td>
+              <td>
+                <div class="d-flex flex-column gap-2">
+                  <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#<?= $editModalId ?>"><i class="fas fa-edit"></i> Edit</button>
+                  <a href="?delete=<?= $id ?>" class="btn btn-danger btn-sm" onclick="return confirm('Delete this product?');"><i class="fas fa-trash"></i> Delete</a>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Edit Modal -->
+            <div class="modal fade" id="<?= $editModalId ?>" tabindex="-1" aria-labelledby="editModalLabel<?= $id ?>" aria-hidden="true">
+              <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                  <form method="POST" enctype="multipart/form-data">
+                    <input type="hidden" name="product_id" value="<?= $id ?>">
+                    <input type="hidden" name="edit_product" value="1">
+                    <div class="modal-header bg-warning text-dark">
+                      <h5 class="modal-title" id="editModalLabel<?= $id ?>">Edit Product</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                      <div class="mb-3">
+                        <input type="text" name="name" class="form-control" value="<?= htmlspecialchars($row['name']) ?>" placeholder="Product Name" required>
+                      </div>
+                      <div class="mb-3">
+                        <input type="text" name="category" class="form-control" value="<?= htmlspecialchars($row['category']) ?>" placeholder="Category" required>
+                      </div>
+                      <div class="mb-3">
+                        <input type="number" step="0.01" name="price" class="form-control" value="<?= $row['price'] ?>" placeholder="Price" required>
+                      </div>
+                      <div class="mb-3">
+                        <input type="number" name="stock" class="form-control" value="<?= $row['stock'] ?>" placeholder="Stock" required>
+                      </div>
+                      <div class="mb-3">
+                        <input type="file" name="image" class="form-control" accept="image/*" placeholder="Image (optional)">
+                        <?php if ($row['image']): ?>
+                          <div class="mt-2">
+                            <small>Current Image:</small><br>
+                            <img src="../uploads/<?= htmlspecialchars($row['image']) ?>" width="70" class="rounded">
+                          </div>
+                        <?php endif; ?>
+                      </div>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                      <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          <?php endwhile; ?>
+          </tbody>
+        </table>
       </div>
-    <?php endif; ?>
+    </div>
+  </div>
+</div>
 
-    <form method="get" class="mb-4">
-      <div class="input-group">
-        <input type="text" name="search" class="form-control" placeholder="Search product name..." value="<?php echo htmlspecialchars($search); ?>">
-        <button type="submit" class="btn btn-primary">Search</button>
-      </div>
-    </form>
-
-    <div class="form-section">
-      <form method="post">
-        <h5>Add New Product</h5>
-        <div class="row g-2">
-          <div class="col-md-3">
+<!-- Add Product Modal -->
+<div class="modal fade" id="addModal" tabindex="-1" aria-labelledby="addModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form method="POST" enctype="multipart/form-data">
+        <input type="hidden" name="add_product" value="1">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title" id="addModalLabel">Add Product</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
             <input type="text" name="name" class="form-control" placeholder="Product Name" required>
           </div>
-          <div class="col-md-2">
+          <div class="mb-3">
             <input type="text" name="category" class="form-control" placeholder="Category" required>
           </div>
-          <div class="col-md-2">
+          <div class="mb-3">
             <input type="number" step="0.01" name="price" class="form-control" placeholder="Price" required>
           </div>
-          <div class="col-md-3">
-            <input type="text" name="image" class="form-control" placeholder="Image path (../asset/images/...)" required>
-          </div>
-          <div class="col-md-1">
+          <div class="mb-3">
             <input type="number" name="stock" class="form-control" placeholder="Stock" required>
           </div>
-          <div class="col-md-1">
-            <button type="submit" name="add_product" class="btn btn-success w-100">Add</button>
+          <div class="mb-3">
+            <input type="file" name="image" class="form-control" accept="image/*" placeholder="Image" required>
           </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Add Product</button>
         </div>
       </form>
     </div>
-
-    <table class="table table-bordered table-hover">
-      <thead class="table-dark text-center">
-        <tr>
-          <th>ID</th>
-          <th>Name</th>
-          <th>Category</th>
-          <th>Price</th>
-          <th>Image</th>
-          <th>Stock</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <?php while ($row = $result->fetch_assoc()): ?>
-          <tr class="text-center <?php echo ($row['stock'] <= 0) ? 'table-danger' : ''; ?>">
-            <td><?php echo $row['id']; ?></td>
-            <td><?php echo htmlspecialchars($row['name']); ?></td>
-            <td><?php echo htmlspecialchars($row['category']); ?></td>
-            <td>₱<?php echo number_format($row['price'], 2); ?></td>
-            <td><img src="<?php echo htmlspecialchars($row['image']); ?>" class="product-img"></td>
-            <td><?php echo $row['stock']; ?></td>
-            <td>
-              <form method="post" class="d-flex gap-1">
-                <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
-                <input type="hidden" name="update_product" value="1">
-                <button class="btn btn-sm btn-primary" onclick="fillForm('<?php echo $row['id']; ?>', '<?php echo htmlspecialchars($row['name']); ?>', '<?php echo htmlspecialchars($row['category']); ?>', '<?php echo $row['price']; ?>', '<?php echo htmlspecialchars($row['image']); ?>', '<?php echo $row['stock']; ?>'); return false;">Edit</button>
-                <a href="?delete=<?php echo $row['id']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?')">Delete</a>
-              </form>
-            </td>
-          </tr>
-        <?php endwhile; ?>
-      </tbody>
-    </table>
   </div>
-</main>
+</div>
 
-<script>
-  function fillForm(id, name, category, price, image, stock) {
-    const form = document.querySelector('form[method="post"]');
-    form.innerHTML = `
-      <h5>Update Product</h5>
-      <input type="hidden" name="id" value="${id}">
-      <div class="row g-2">
-        <div class="col-md-3">
-          <input type="text" name="name" class="form-control" value="${name}" required>
-        </div>
-        <div class="col-md-2">
-          <input type="text" name="category" class="form-control" value="${category}" required>
-        </div>
-        <div class="col-md-2">
-          <input type="number" step="0.01" name="price" class="form-control" value="${price}" required>
-        </div>
-        <div class="col-md-3">
-          <input type="text" name="image" class="form-control" value="${image}" required>
-        </div>
-        <div class="col-md-1">
-          <input type="number" name="stock" class="form-control" value="${stock}" required>
-        </div>
-        <div class="col-md-1">
-          <button type="submit" name="update_product" class="btn btn-warning w-100">Update</button>
-        </div>
-      </div>`;
-  }
-</script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
