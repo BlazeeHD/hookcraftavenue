@@ -2,15 +2,59 @@
 include '../includes/db.php';
 session_start();
 
-// ✅ Require user login
 if (!isset($_SESSION['user_id'])) {
   $_SESSION['login_required'] = true;
   header('Location: ../index.php');
   exit;
 }
 
+$user_id = $_SESSION['user_id'];
+
+// Function to get or create cart and return cart_id
+function getCartId($conn, $user_id) {
+  $result = mysqli_query($conn, "SELECT id FROM cart WHERE user_id = $user_id LIMIT 1");
+  if ($row = mysqli_fetch_assoc($result)) {
+    return $row['id'];
+  } else {
+    mysqli_query($conn, "INSERT INTO cart (user_id) VALUES ($user_id)");
+    return mysqli_insert_id($conn);
+  }
+}
+
+// Function to sync session cart to database
+function syncCartToDatabase($conn, $user_id, $session_cart) {
+  $cart_id = getCartId($conn, $user_id);
+
+  // Clear current cart items
+  mysqli_query($conn, "DELETE FROM cart_item WHERE cart_id = $cart_id");
+
+  // Insert each item
+  foreach ($session_cart as $product_id => $quantity) {
+    $stmt = mysqli_prepare($conn, "INSERT INTO cart_item (cart_id, product_id, quantity) VALUES (?, ?, ?)");
+    if ($stmt) {
+      mysqli_stmt_bind_param($stmt, "iii", $cart_id, $product_id, $quantity);
+      mysqli_stmt_execute($stmt);
+      mysqli_stmt_close($stmt);
+    }
+  }
+}
+
+// Function to load cart from database to session
+function loadCartFromDatabase($conn, $user_id) {
+  $cart = [];
+  $result = mysqli_query($conn, "SELECT id FROM cart WHERE user_id = $user_id LIMIT 1");
+  if ($row = mysqli_fetch_assoc($result)) {
+    $cart_id = $row['id'];
+    $items = mysqli_query($conn, "SELECT product_id, quantity FROM cart_item WHERE cart_id = $cart_id");
+    while ($item = mysqli_fetch_assoc($items)) {
+      $cart[$item['product_id']] = $item['quantity'];
+    }
+  }
+  return $cart;
+}
+
 if (!isset($_SESSION['cart'])) {
-  $_SESSION['cart'] = [];
+  $_SESSION['cart'] = loadCartFromDatabase($conn, $user_id);
 }
 
 // Handle item removal
@@ -18,6 +62,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['remove_id'])) {
   $remove_id = intval($_POST['remove_id']);
   if (isset($_SESSION['cart'][$remove_id])) {
     unset($_SESSION['cart'][$remove_id]);
+
+    $cart_id = getCartId($conn, $user_id);
+    $stmt = mysqli_prepare($conn, "DELETE FROM cart_item WHERE cart_id = ? AND product_id = ?");
+    if ($stmt) {
+      mysqli_stmt_bind_param($stmt, "ii", $cart_id, $remove_id);
+      mysqli_stmt_execute($stmt);
+      mysqli_stmt_close($stmt);
+    }
   }
 }
 
@@ -30,8 +82,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_id'], $_POST['
   $stock_row = mysqli_fetch_assoc($stock_check);
   if ($stock_row && $update_qty > 0 && $update_qty <= $stock_row['stock']) {
     $_SESSION['cart'][$update_id] = $update_qty;
+
+    $cart_id = getCartId($conn, $user_id);
+    $stmt = mysqli_prepare($conn, "
+      INSERT INTO cart_item (cart_id, product_id, quantity)
+      VALUES (?, ?, ?)
+      ON DUPLICATE KEY UPDATE quantity = VALUES(quantity)
+    ");
+    if ($stmt) {
+      mysqli_stmt_bind_param($stmt, "iii", $cart_id, $update_id, $update_qty);
+      mysqli_stmt_execute($stmt);
+      mysqli_stmt_close($stmt);
+    }
   }
 }
+
+// Sync session cart to DB
+syncCartToDatabase($conn, $user_id, $_SESSION['cart']);
 
 $total = 0;
 $cart_items = [];
@@ -155,4 +222,3 @@ if (!empty($_SESSION['cart'])) {
 </script>
 </body>
 </html>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             
