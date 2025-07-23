@@ -1,7 +1,6 @@
 <?php
 include 'includes/db.php'; // uses $conn (MySQLi)
 
-
 // Get total users
 $usersResult = $conn->query("SELECT COUNT(*) as total FROM users");
 $totalUsers = $usersResult->fetch_assoc()['total'];
@@ -21,6 +20,9 @@ $totalRevenue = $revenueResult->fetch_assoc()['total'] ?? 0;
 // Get cart count
 $cartResult = $conn->query("SELECT COUNT(*) as total FROM cart");
 $cartCount = $cartResult->fetch_assoc()['total'];
+
+// Get recent orders for the table
+$recentOrdersResult = $conn->query("SELECT id, customer_name, total, status FROM orders ORDER BY created_at DESC LIMIT 6");
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -47,83 +49,10 @@ $cartCount = $cartResult->fetch_assoc()['total'];
             min-height: 100vh;
         }
 
-        /* Sidebar */
-        .sidebar {
-            width: 80px;
-            background: linear-gradient(180deg, #e91e63 0%, #c2185b 50%, #ad1457 100%);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px 0;
-            box-shadow: 2px 0 20px rgba(233, 30, 99, 0.3);
-            position: relative;
-        }
-
-        .logo {
-            width: 50px;
-            height: 50px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 30px;
-            backdrop-filter: blur(10px);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-        }
-
-        .logo i {
-            color: white;
-            font-size: 24px;
-        }
-
-        .nav-menu {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            width: 100%;
-            align-items: center;
-        }
-
-        .nav-item {
-            width: 50px;
-            height: 50px;
-            border-radius: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: rgba(255, 255, 255, 0.7);
-            transition: all 0.3s ease;
-            cursor: pointer;
-            position: relative;
-        }
-
-        .nav-item:hover,
-        .nav-item.active {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            transform: translateX(5px);
-        }
-
-        .nav-item.active::after {
-            content: '';
-            position: absolute;
-            right: -20px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 4px;
-            height: 30px;
-            background: white;
-            border-radius: 2px;
-        }
-
-        .nav-item i {
-            font-size: 20px;
-        }
-
-        /* Main Content */
+        /* Main Content - Adjusted for sidebar */
         .main-content {
             flex: 1;
+            margin-left: 80px; /* Account for fixed sidebar width */
             padding: 30px;
             background: transparent;
         }
@@ -274,7 +203,7 @@ $cartCount = $cartResult->fetch_assoc()['total'];
             box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
         }
 
-        /* Card 1 - Users */
+        /* Card Variants */
         .card-users {
             --card-color: #e91e63;
         }
@@ -283,7 +212,6 @@ $cartCount = $cartResult->fetch_assoc()['total'];
             background: linear-gradient(45deg, #e91e63, #f8bbd9);
         }
 
-        /* Card 2 - Orders */
         .card-orders {
             --card-color: #f06292;
         }
@@ -292,7 +220,6 @@ $cartCount = $cartResult->fetch_assoc()['total'];
             background: linear-gradient(45deg, #f06292, #f8bbd9);
         }
 
-        /* Card 3 - Analytics */
         .card-analytics {
             grid-row: 1 / 3;
             --card-color: #ad1457;
@@ -302,7 +229,6 @@ $cartCount = $cartResult->fetch_assoc()['total'];
             background: linear-gradient(45deg, #ad1457, #e91e63);
         }
 
-        /* Card 4 - Recent Orders */
         .card-recent {
             grid-column: 1 / 3;
             --card-color: #ec407a;
@@ -312,7 +238,6 @@ $cartCount = $cartResult->fetch_assoc()['total'];
             background: linear-gradient(45deg, #ec407a, #f8bbd9);
         }
 
-        /* Card 5 - Revenue */
         .card-revenue {
             --card-color: #c2185b;
         }
@@ -461,7 +386,7 @@ $cartCount = $cartResult->fetch_assoc()['total'];
             opacity: 0.5;
         }
 
-        /* Responsive */
+        /* Responsive Design */
         @media (max-width: 1200px) {
             .dashboard-grid {
                 grid-template-columns: 1fr 1fr;
@@ -479,21 +404,10 @@ $cartCount = $cartResult->fetch_assoc()['total'];
         }
 
         @media (max-width: 768px) {
-            .dashboard-container {
-                flex-direction: column;
-            }
-            
-            .sidebar {
-                width: 100%;
-                height: 80px;
-                flex-direction: row;
-                justify-content: center;
-                padding: 15px;
-            }
-            
-            .nav-menu {
-                flex-direction: row;
-                gap: 15px;
+            .main-content {
+                margin-left: 0;
+                margin-bottom: 80px; /* Account for bottom sidebar on mobile */
+                padding: 20px;
             }
             
             .dashboard-grid {
@@ -506,38 +420,13 @@ $cartCount = $cartResult->fetch_assoc()['total'];
                 grid-column: 1;
                 grid-row: auto;
             }
-            
-            .main-content {
-                padding: 20px;
-            }
         }
     </style>
 </head>
 <body>
     <div class="dashboard-container">
-        <!-- Sidebar -->
-        <div class="sidebar">
-            <div class="logo">
-                <i class="fas fa-seedling"></i>
-            </div>
-            <div class="nav-menu">
-                <div class="nav-item active">
-                    <i class="fas fa-home"></i>
-                </div>
-                <div class="nav-item">
-                    <i class="fas fa-chart-pie"></i>
-                </div>
-                <div class="nav-item">
-                    <i class="fas fa-box"></i>
-                </div>
-                <div class="nav-item">
-                    <i class="fas fa-shopping-cart"></i>
-                </div>
-                <div class="nav-item">
-                    <i class="fas fa-envelope"></i>
-                </div>
-            </div>
-        </div>
+        <!-- Include Sidebar -->
+        <?php include 'includes/sidebar.php'; ?>
 
         <!-- Main Content -->
         <div class="main-content">
@@ -659,7 +548,7 @@ $cartCount = $cartResult->fetch_assoc()['total'];
                             <?php endwhile; ?>
                         <?php else: ?>
                             <div class="table-row">
-                                <div colspan="4" style="text-align: center; color: #666; grid-column: 1 / 5;">
+                                <div style="text-align: center; color: #666; grid-column: 1 / 5;">
                                     No recent orders found
                                 </div>
                             </div>
