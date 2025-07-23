@@ -2,6 +2,13 @@
 include '../includes/db.php';
 session_start();
 
+// ✅ Require user login
+if (!isset($_SESSION['user_id'])) {
+  $_SESSION['login_required'] = true;
+  header('Location: ../index.php');
+  exit;
+}
+
 if (!isset($_SESSION['cart'])) {
   $_SESSION['cart'] = [];
 }
@@ -19,7 +26,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_id'], $_POST['
   $update_id = intval($_POST['update_id']);
   $update_qty = intval($_POST['update_qty']);
 
-  // Check if quantity is valid and product exists
   $stock_check = mysqli_query($conn, "SELECT stock FROM products WHERE id = $update_id");
   $stock_row = mysqli_fetch_assoc($stock_check);
   if ($stock_row && $update_qty > 0 && $update_qty <= $stock_row['stock']) {
@@ -53,10 +59,10 @@ if (!empty($_SESSION['cart'])) {
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Your Cart</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
 </head>
 <body>
 <nav class="navbar navbar-expand-lg" style="background-color: #ffcad4;">
@@ -64,6 +70,7 @@ if (!empty($_SESSION['cart'])) {
     <a class="navbar-brand" href="shop.php">HookcraftAvenue</a>
   </div>
 </nav>
+
 <div class="container mt-5">
   <h2 class="mb-4">🛒 Your Shopping Cart</h2>
   <?php if (empty($cart_items)): ?>
@@ -115,7 +122,7 @@ if (!empty($_SESSION['cart'])) {
   <?php endif; ?>
 </div>
 
-<!-- Modal -->
+<!-- Remove Confirmation Modal -->
 <div class="modal fade" id="confirmRemoveModal" tabindex="-1" aria-labelledby="confirmRemoveModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -148,3 +155,4 @@ if (!empty($_SESSION['cart'])) {
 </script>
 </body>
 </html>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             

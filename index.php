@@ -136,13 +136,72 @@ $userName = $_SESSION['user_name'] ?? '';
 
 <!-- Gallery -->
 <section class="gallery">
-  <div class="container">
-    <h2>Gallery</h2>
-    <div class="gallery-grid">
-      <!-- gallery items here (same as before) -->
+    <div class="container">
+      <h2>Gallery</h2>
+   <div class="gallery-grid">
+  <div class="gallery-item">
+    <img src="asset/images/gallery1.jpg" alt="Red Rose Delight">
+    <div class="overlay">
+      <strong>Red Rose Delight</strong><br>
+      ₱899 – Elegant red roses arranged to express love and romance.
     </div>
   </div>
-</section>
+  <div class="gallery-item">
+    <img src="asset/images/gallery2.jpg" alt="Sunshine Mix">
+    <div class="overlay">
+      <strong>Sunshine Mix</strong><br>
+      ₱749 – Bright seasonal bouquet perfect for casual gifts.
+    </div>
+  </div>
+  <div class="gallery-item">
+    <img src="asset/images/gallery3.png" alt="Tiny Blossom">
+    <div class="overlay">
+      <strong>Tiny Blossom</strong><br>
+      ₱399 – A petite bundle, great for small thoughtful surprises.
+    </div>
+  </div>
+   <div class="gallery-item">
+    <img src="asset/images/gallery4.png" alt="Tiny Blossom">
+    <div class="overlay">
+      <strong>Tiny Blossom</strong><br>
+      ₱399 – A petite bundle, great for small thoughtful surprises.
+    </div>
+  </div>
+   <div class="gallery-item">
+    <img src="asset/images/gallery5.png" alt="Tiny Blossom">
+    <div class="overlay">
+      <strong>Tiny Blossom</strong><br>
+      ₱399 – A petite bundle, great for small thoughtful surprises.
+    </div>
+  </div>
+     <div class="gallery-item">
+    <img src="asset/images/gallery6.png" alt="Tiny Blossom">
+    <div class="overlay">
+      <strong>Tiny Blossom</strong><br>
+      ₱399 – A petite bundle, great for small thoughtful surprises.
+    </div>
+  </div>
+     <div class="gallery-item">
+    <img src="asset/images/gallery7.png" alt="Tiny Blossom">
+    <div class="overlay">
+      <strong>Tiny Blossom</strong><br>
+      ₱399 – A petite bundle, great for small thoughtful surprises.
+    </div>
+  </div>
+     <div class="gallery-item">
+    <img src="asset/images/gallery8.png" alt="Tiny Blossom">
+    <div class="overlay">
+      <strong>Tiny Blossom</strong><br>
+      ₱399 – A petite bundle, great for small thoughtful surprises.
+    </div>
+  </div>
+   
+  <!-- Add more in same format -->
+</div>
+
+    </div>
+  </section>
+
 
 <!-- Customize -->
 <section class="customize py-4">

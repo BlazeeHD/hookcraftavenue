@@ -255,4 +255,3 @@ $cart_count = count($_SESSION['cart']);
     maxPriceText.textContent = '1000';
   });
 </script>
-
