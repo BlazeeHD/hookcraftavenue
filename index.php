@@ -1,7 +1,9 @@
 <?php
-
-include('pages/login.php');
-include('pages/signup.php');
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+include('pages/login_modal.php');
+include('pages/signup_modal.php');
 
 if (!isset($_SESSION['cart'])) {
   $_SESSION['cart'] = [];
