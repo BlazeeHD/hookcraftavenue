@@ -593,17 +593,14 @@ $stmt->close();
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Full Name</label>
-                        <input type="text" name="name" class="form-control" required maxlength="100">
+                        <input type="text" name="name" class="form-control" required maxlength="100" placeholder="Full Name">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Email Address</label>
-                        <input type="email" name="email" class="form-control" required maxlength="150">
+                        <input type="email" name="email" class="form-control" required maxlength="150" placeholder="Email Address">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Password</label>
                         <div class="input-group">
-                            <input type="password" name="password" class="form-control" id="add_password" required minlength="8">
+                            <input type="password" name="password" class="form-control" id="add_password" required minlength="8" placeholder="Password">
                             <button type="button" class="btn btn-outline-secondary" onclick="togglePassword('add_password', this)">
                                 <i class="fas fa-eye"></i>
                             </button>
