@@ -89,7 +89,7 @@ $userName = $isLoggedIn ? $_SESSION['user_name'] : '';
 <!-- Gallery Section -->
 <section class="gallery py-5">
   <div class="container">
-    <h2 class="mb-4 text-center">Our Flower Gallery</h2>
+    <h2 class="mb-4 text-center"> Flower Gallery</h2>
     <div class="row g-3">
       <?php
       $images = [

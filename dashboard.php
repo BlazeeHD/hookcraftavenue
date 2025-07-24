@@ -13,7 +13,7 @@ $totalOrders = $ordersResult->fetch_assoc()['total'];
 $productsResult = $conn->query("SELECT COUNT(*) as total FROM products");
 $totalProducts = $productsResult->fetch_assoc()['total'];
 
-// Get total revenue
+// Get total revenue - only from successful payments
 $revenueResult = $conn->query("SELECT SUM(total) as total FROM orders WHERE payment_status = 'Successful'");
 $totalRevenue = $revenueResult->fetch_assoc()['total'] ?? 0;
 
@@ -21,17 +21,19 @@ $totalRevenue = $revenueResult->fetch_assoc()['total'] ?? 0;
 $cartResult = $conn->query("SELECT COUNT(*) as total FROM cart");
 $cartCount = $cartResult->fetch_assoc()['total'];
 
-// Get recent orders for the table
-$recentOrdersResult = $conn->query("SELECT id, customer_name, total, status FROM orders ORDER BY created_at DESC LIMIT 6");
+// ✅ FIX: Get recent orders with proper query
+$recentOrdersResult = $conn->query("SELECT id, customer_name, total, payment_status FROM orders ORDER BY created_at DESC LIMIT 6");
 ?>
+
+<!-- HTML PART (unchanged layout/design) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Hookcraft Avenue</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard - Hookcraft Avenue</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+ <style>
         * {
             margin: 0;
             padding: 0;
@@ -363,6 +365,11 @@ $recentOrdersResult = $conn->query("SELECT id, customer_name, total, status FROM
             color: #1e40af;
         }
 
+        .status-successful {
+            background: #dcfce7;
+            color: #166534;
+        }
+
         /* Analytics Chart Placeholder */
         .chart-container {
             flex: 1;
@@ -424,154 +431,143 @@ $recentOrdersResult = $conn->query("SELECT id, customer_name, total, status FROM
     </style>
 </head>
 <body>
-    <div class="dashboard-container">
-        <!-- Include Sidebar -->
-        <?php include 'includes/sidebar.php'; ?>
+  <div class="dashboard-container">
+    <?php include 'includes/sidebar.php'; ?>
 
-        <!-- Main Content -->
-        <div class="main-content">
-            <!-- Header -->
-            <div class="header">
-                <div class="brand-section">
-                    <div class="brand-logo">
-                        <h2>Hookcraft Avenue</h2>
-                    </div>
-                </div>
-                <div class="user-section">
-                    <div class="notification-btn">
-                        <i class="fas fa-bell"></i>
-                        <span class="notification-badge">3</span>
-                    </div>
-                    <div class="user-profile">
-                        <div class="user-avatar">A</div>
-                        <div class="user-info">
-                            <div class="user-name">Admin</div>
-                            <div class="user-role">Administrator</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Dashboard Grid -->
-            <div class="dashboard-grid">
-                <!-- Card 1: Users -->
-                <div class="dashboard-card card-users">
-                    <div class="card-header">
-                        <h3 class="card-title">Total Users</h3>
-                        <div class="card-icon">
-                            <i class="fas fa-users"></i>
-                        </div>
-                    </div>
-                    <div class="card-value"><?= number_format($totalUsers) ?></div>
-                    <div class="card-change positive">
-                        <i class="fas fa-arrow-up"></i>
-                        +12% from last month
-                    </div>
-                </div>
-
-                <!-- Card 2: Orders -->
-                <div class="dashboard-card card-orders">
-                    <div class="card-header">
-                        <h3 class="card-title">Total Orders</h3>
-                        <div class="card-icon">
-                            <i class="fas fa-shopping-bag"></i>
-                        </div>
-                    </div>
-                    <div class="card-value"><?= number_format($totalOrders) ?></div>
-                    <div class="card-change positive">
-                        <i class="fas fa-arrow-up"></i>
-                        +8% from last month
-                    </div>
-                </div>
-
-                <!-- Card 3: Analytics -->
-                <div class="dashboard-card card-analytics">
-                    <div class="card-header">
-                        <h3 class="card-title">Sales Analytics</h3>
-                        <div class="card-icon">
-                            <i class="fas fa-chart-line"></i>
-                        </div>
-                    </div>
-                    <div class="chart-container">
-                        <div class="chart-placeholder">
-                            <i class="fas fa-chart-area"></i>
-                            <div>Revenue: ₱<?= number_format($totalRevenue, 0) ?></div>
-                            <div style="font-size: 12px; margin-top: 10px;">Products: <?= number_format($totalProducts) ?></div>
-                            <div style="font-size: 12px;">Active Carts: <?= number_format($cartCount) ?></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Card 4: Recent Orders -->
-                <div class="dashboard-card card-recent">
-                    <div class="card-header">
-                        <h3 class="card-title">Recent Orders</h3>
-                        <div class="card-icon">
-                            <i class="fas fa-list"></i>
-                        </div>
-                    </div>
-                    <div class="recent-orders-table">
-                        <div class="table-header">
-                            <div>Order ID</div>
-                            <div>Customer</div>
-                            <div>Amount</div>
-                            <div>Status</div>
-                        </div>
-                        <?php if ($recentOrdersResult && $recentOrdersResult->num_rows > 0): ?>
-                            <?php $count = 0; ?>
-                            <?php while ($order = $recentOrdersResult->fetch_assoc() && $count < 6): ?>
-                                <div class="table-row">
-                                    <div>#<?= $order['id'] ?></div>
-                                    <div><?= htmlspecialchars($order['customer_name'] ?? 'Guest') ?></div>
-                                    <div>₱<?= number_format($order['total'], 0) ?></div>
-                                    <div>
-                                        <?php
-                                        $statusClass = 'status-pending';
-                                        switch(strtolower($order['status'])) {
-                                            case 'delivered':
-                                                $statusClass = 'status-delivered';
-                                                break;
-                                            case 'cancelled':
-                                                $statusClass = 'status-cancelled';
-                                                break;
-                                            case 'processing':
-                                                $statusClass = 'status-processing';
-                                                break;
-                                        }
-                                        ?>
-                                        <span class="status-badge <?= $statusClass ?>">
-                                            <?= ucfirst($order['status']) ?>
-                                        </span>
-                                    </div>
-                                </div>
-                                <?php $count++; ?>
-                            <?php endwhile; ?>
-                        <?php else: ?>
-                            <div class="table-row">
-                                <div style="text-align: center; color: #666; grid-column: 1 / 5;">
-                                    No recent orders found
-                                </div>
-                            </div>
-                        <?php endif; ?>
-                    </div>
-                </div>
-
-                <!-- Card 5: Revenue Summary -->
-                <div class="dashboard-card card-revenue">
-                    <div class="card-header">
-                        <h3 class="card-title">Revenue Summary</h3>
-                        <div class="card-icon">
-                            <i class="fas fa-dollar-sign"></i>
-                        </div>
-                    </div>
-                    <div class="card-value">₱<?= number_format($totalRevenue, 0) ?></div>
-                    <div class="card-change positive">
-                        <i class="fas fa-arrow-up"></i>
-                        +15% from last month
-                    </div>
-                </div>
-            </div>
+    <div class="main-content">
+      <div class="header">
+        <div class="brand-section">
+          <div class="brand-logo">
+            <h2>Hookcraft Avenue</h2>
+          </div>
         </div>
+        <div class="user-section">
+          <div class="notification-btn">
+            <i class="fas fa-bell"></i>
+            <span class="notification-badge">3</span>
+          </div>
+          <div class="user-profile">
+            <div class="user-avatar">A</div>
+            <div class="user-info">
+              <div class="user-name">Admin</div>
+              <div class="user-role">Administrator</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dashboard-grid">
+        <!-- Total Users -->
+        <div class="dashboard-card card-users">
+          <div class="card-header">
+            <h3 class="card-title">Total Users</h3>
+            <div class="card-icon"><i class="fas fa-users"></i></div>
+          </div>
+          <div class="card-value"><?= number_format($totalUsers) ?></div>
+          <div class="card-change positive">
+            <i class="fas fa-arrow-up"></i> +12% from last month
+          </div>
+        </div>
+
+        <!-- Total Orders -->
+        <div class="dashboard-card card-orders">
+          <div class="card-header">
+            <h3 class="card-title">Total Orders</h3>
+            <div class="card-icon"><i class="fas fa-shopping-bag"></i></div>
+          </div>
+          <div class="card-value"><?= number_format($totalOrders) ?></div>
+          <div class="card-change positive">
+            <i class="fas fa-arrow-up"></i> +8% from last month
+          </div>
+        </div>
+
+        <!-- Sales Analytics -->
+        <div class="dashboard-card card-analytics">
+          <div class="card-header">
+            <h3 class="card-title">Sales Analytics</h3>
+            <div class="card-icon"><i class="fas fa-chart-line"></i></div>
+          </div>
+          <div class="chart-container">
+            <div class="chart-placeholder">
+              <i class="fas fa-chart-area"></i>
+              <div>Revenue: ₱<?= number_format($totalRevenue, 0) ?></div>
+              <div style="font-size: 12px; margin-top: 10px;">Products: <?= number_format($totalProducts) ?></div>
+              <div style="font-size: 12px;">Active Carts: <?= number_format($cartCount) ?></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Orders -->
+        <div class="dashboard-card card-recent">
+          <div class="card-header">
+            <h3 class="card-title">Recent Orders</h3>
+            <div class="card-icon"><i class="fas fa-list"></i></div>
+          </div>
+          <div class="recent-orders-table">
+            <div class="table-header">
+              <div>Order ID</div>
+              <div>Customer</div>
+              <div>Amount</div>
+              <div>Status</div>
+            </div>
+            <?php if ($recentOrdersResult && $recentOrdersResult->num_rows > 0): ?>
+              <?php $count = 0; ?>
+              <?php while (($order = $recentOrdersResult->fetch_assoc()) && $count < 6): ?>
+                <div class="table-row">
+                  <div>#<?= $order['id'] ?></div>
+                  <div><?= htmlspecialchars($order['customer_name'] ?? 'Guest') ?></div>
+                  <div>₱<?= number_format($order['total'], 0) ?></div>
+                  <div>
+                    <?php
+                    // ✅ FIX: Map payment_status to display status
+                    $paymentStatus = strtolower($order['payment_status']);
+                    
+                    // Map database status to display status
+                    $displayStatus = match($paymentStatus) {
+                        'successful' => 'delivered',
+                        'pending' => 'pending',
+                        'cancelled' => 'cancelled',
+                        'processing' => 'processing',
+                        default => 'pending'
+                    };
+                    
+                    $statusClass = match($displayStatus) {
+                        'delivered' => 'status-delivered',
+                        'cancelled' => 'status-cancelled', 
+                        'processing' => 'status-processing',
+                        default => 'status-pending'
+                    };
+                    ?>
+                    <span class="status-badge <?= $statusClass ?>">
+                      <?= ucfirst($displayStatus) ?>
+                    </span>
+                  </div>
+                </div>
+                <?php $count++; ?>
+              <?php endwhile; ?>
+            <?php else: ?>
+              <div class="table-row">
+                <div style="text-align: center; color: #666; grid-column: 1 / 5;">
+                  No recent orders found
+                </div>
+              </div>
+            <?php endif; ?>
+          </div>
+        </div>
+
+        <!-- Revenue Summary -->
+        <div class="dashboard-card card-revenue">
+          <div class="card-header">
+            <h3 class="card-title">Revenue Summary</h3>
+            <div class="card-icon"><i class="fas fa-dollar-sign"></i></div>
+          </div>
+          <div class="card-value">₱<?= number_format($totalRevenue, 0) ?></div>
+          <div class="card-change positive">
+            <i class="fas fa-arrow-up"></i> +15% from last month
+          </div>
+        </div>
+      </div>
     </div>
+  </div>
 </body>
 </html>
