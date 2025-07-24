@@ -9,21 +9,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_product'])) {
     $price = floatval($_POST['price']);
     $stock = intval($_POST['stock']);
     $imageName = '';
-    
-    // Handle image upload
+
+    // Use image from ../asset/images/
     if (!empty($_FILES['image']['name'])) {
-        $imageName = time() . '_' . $_FILES['image']['name'];
-        $imagePath = _DIR_ . '/../uploads/' . $imageName;
-        
-        if (!move_uploaded_file($_FILES['image']['tmp_name'], $imagePath)) {
-            $imageName = '';
+        $filename = basename($_FILES['image']['name']);
+        $imagePath = '../asset/images/' . $filename;
+
+        if (move_uploaded_file($_FILES['image']['tmp_name'], __DIR__ . '/' . $imagePath)) {
+            $imageName = $imagePath; // Save relative path to asset folder
         }
     }
-    
+
     $stmt = $conn->prepare("INSERT INTO products (name, category, price, stock, image) VALUES (?, ?, ?, ?, ?)");
     $stmt->bind_param("ssdis", $name, $category, $price, $stock, $imageName);
     $stmt->execute();
-    
+
     header("Location: " . $_SERVER['PHP_SELF']);
     exit;
 }
@@ -35,31 +35,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_product'])) {
     $category = trim($_POST['category']);
     $price = floatval($_POST['price']);
     $stock = intval($_POST['stock']);
-    
+
     $imageSql = "";
     $params = [$name, $category, $price, $stock];
     $types = "ssdi";
-    
-    // Handle image update
+
+    // Handle image update from ../asset/images/
     if (!empty($_FILES['image']['name'])) {
-        $imageName = time() . '_' . $_FILES['image']['name'];
-        $imagePath = _DIR_ . '/../uploads/' . $imageName;
-        
-        if (move_uploaded_file($_FILES['image']['tmp_name'], $imagePath)) {
+        $filename = basename($_FILES['image']['name']);
+        $imagePath = '../asset/images/' . $filename;
+
+        if (move_uploaded_file($_FILES['image']['tmp_name'], __DIR__ . '/' . $imagePath)) {
+            $imageName = $imagePath; // Save relative path
             $imageSql = ", image = ?";
             $params[] = $imageName;
             $types .= "s";
         }
     }
-    
+
     $params[] = $id;
     $types .= "i";
-    
+
     $query = "UPDATE products SET name = ?, category = ?, price = ?, stock = ? $imageSql WHERE id = ?";
     $stmt = $conn->prepare($query);
     $stmt->bind_param($types, ...$params);
     $stmt->execute();
-    
+
     header("Location: " . $_SERVER['PHP_SELF']);
     exit;
 }
@@ -70,7 +71,7 @@ if (isset($_GET['delete'])) {
     $stmt = $conn->prepare("DELETE FROM products WHERE id = ?");
     $stmt->bind_param("i", $id);
     $stmt->execute();
-    
+
     header("Location: " . $_SERVER['PHP_SELF']);
     exit;
 }
@@ -78,6 +79,7 @@ if (isset($_GET['delete'])) {
 // Fetch products
 $result = $conn->query("SELECT * FROM products ORDER BY id DESC");
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
