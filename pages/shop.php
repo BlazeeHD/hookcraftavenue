@@ -208,18 +208,7 @@ $userName = $_SESSION['user_name'] ?? '';
   <p>&copy; 2025 Hookcraft Avenue. All rights reserved.</p>
 </footer>
 
-<!-- Dummy Login Modal -->
-<div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content p-3">
-      <h5 class="text-center">Login Required</h5>
-      <p class="text-center">Please log in to continue.</p>
-      <div class="text-center">
-        <a href="login.php" class="btn btn-primary">Login</a>
-      </div>
-    </div>
-  </div>
-</div>
+<?php include('../pages/login_modal.php'); ?>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
 <script>
