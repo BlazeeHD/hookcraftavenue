@@ -2,125 +2,116 @@
 include '../includes/db.php';
 session_start();
 
-if (!isset($_SESSION['user_id'])) {
-  $_SESSION['login_required'] = true;
-  header('Location: ../index.php');
-  exit;
-}
-
-$user_id = $_SESSION['user_id'];
-
-// Function to get or create cart and return cart_id
-function getCartId($conn, $user_id) {
-  $result = mysqli_query($conn, "SELECT id FROM cart WHERE user_id = $user_id LIMIT 1");
-  if ($row = mysqli_fetch_assoc($result)) {
-    return $row['id'];
-  } else {
-    mysqli_query($conn, "INSERT INTO cart (user_id) VALUES ($user_id)");
-    return mysqli_insert_id($conn);
-  }
-}
-
-// Function to sync session cart to database
-function syncCartToDatabase($conn, $user_id, $session_cart) {
-  $cart_id = getCartId($conn, $user_id);
-
-  // Clear current cart items
-  mysqli_query($conn, "DELETE FROM cart_item WHERE cart_id = $cart_id");
-
-  // Insert each item
-  foreach ($session_cart as $product_id => $quantity) {
-    $stmt = mysqli_prepare($conn, "INSERT INTO cart_item (cart_id, product_id, quantity) VALUES (?, ?, ?)");
-    if ($stmt) {
-      mysqli_stmt_bind_param($stmt, "iii", $cart_id, $product_id, $quantity);
-      mysqli_stmt_execute($stmt);
-      mysqli_stmt_close($stmt);
-    }
-  }
-}
-
-// Function to load cart from database to session
-function loadCartFromDatabase($conn, $user_id) {
-  $cart = [];
-  $result = mysqli_query($conn, "SELECT id FROM cart WHERE user_id = $user_id LIMIT 1");
-  if ($row = mysqli_fetch_assoc($result)) {
-    $cart_id = $row['id'];
-    $items = mysqli_query($conn, "SELECT product_id, quantity FROM cart_item WHERE cart_id = $cart_id");
-    while ($item = mysqli_fetch_assoc($items)) {
-      $cart[$item['product_id']] = $item['quantity'];
-    }
-  }
-  return $cart;
-}
-
+// Ensure session cart exists
 if (!isset($_SESSION['cart'])) {
-  $_SESSION['cart'] = loadCartFromDatabase($conn, $user_id);
+    $_SESSION['cart'] = [];
 }
 
-// Handle item removal
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['remove_id'])) {
-  $remove_id = intval($_POST['remove_id']);
-  if (isset($_SESSION['cart'][$remove_id])) {
-    unset($_SESSION['cart'][$remove_id]);
+// Handle REMOVE action
+if (isset($_POST['remove_id'])) {
+    $product_id = $_POST['remove_id'];
+    unset($_SESSION['cart'][$product_id]);
+}
 
-    $cart_id = getCartId($conn, $user_id);
-    $stmt = mysqli_prepare($conn, "DELETE FROM cart_item WHERE cart_id = ? AND product_id = ?");
-    if ($stmt) {
-      mysqli_stmt_bind_param($stmt, "ii", $cart_id, $remove_id);
-      mysqli_stmt_execute($stmt);
-      mysqli_stmt_close($stmt);
+// Handle UPDATE action
+if (isset($_POST['update_id']) && isset($_POST['update_qty'])) {
+    $product_id = (int)$_POST['update_id'];
+    $qty = (int)$_POST['update_qty'];
+
+    if ($qty > 0) {
+        $_SESSION['cart'][$product_id] = $qty;
+    } else {
+        unset($_SESSION['cart'][$product_id]);
     }
-  }
 }
 
-// Handle quantity update
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_id'], $_POST['update_qty'])) {
-  $update_id = intval($_POST['update_id']);
-  $update_qty = intval($_POST['update_qty']);
+// Sync to DB if logged in
+if (isset($_SESSION['user_id'])) {
+    $user_id = (int)$_SESSION['user_id'];
 
-  $stock_check = mysqli_query($conn, "SELECT stock FROM products WHERE id = $update_id");
-  $stock_row = mysqli_fetch_assoc($stock_check);
-  if ($stock_row && $update_qty > 0 && $update_qty <= $stock_row['stock']) {
-    $_SESSION['cart'][$update_id] = $update_qty;
+    // Optional debug
+    // echo "Logged in as user ID: " . $user_id;
 
-    $cart_id = getCartId($conn, $user_id);
-    $stmt = mysqli_prepare($conn, "
-      INSERT INTO cart_item (cart_id, product_id, quantity)
-      VALUES (?, ?, ?)
-      ON DUPLICATE KEY UPDATE quantity = VALUES(quantity)
-    ");
-    if ($stmt) {
-      mysqli_stmt_bind_param($stmt, "iii", $cart_id, $update_id, $update_qty);
-      mysqli_stmt_execute($stmt);
-      mysqli_stmt_close($stmt);
+    // Check if a cart exists for the user
+    $cart_result = mysqli_query($conn, "SELECT id FROM cart WHERE user_id = $user_id");
+
+    if (!$cart_result) {
+        die("Error retrieving cart: " . mysqli_error($conn));
     }
-  }
+
+    if ($cart_row = mysqli_fetch_assoc($cart_result)) {
+        $cart_id = $cart_row['id'];
+        // Update created_at on access
+        mysqli_query($conn, "UPDATE cart SET created_at = NOW() WHERE id = $cart_id");
+    } else {
+        // Insert new cart with current timestamp
+        $insert_cart_sql = "INSERT INTO cart (user_id, created_at) VALUES (?, NOW())";
+        $stmt = mysqli_prepare($conn, $insert_cart_sql);
+
+        if (!$stmt) {
+            die("Prepare failed: " . mysqli_error($conn));
+        }
+
+        mysqli_stmt_bind_param($stmt, "i", $user_id);
+        if (!mysqli_stmt_execute($stmt)) {
+            die("Insert failed: " . mysqli_error($conn));
+        }
+
+        $cart_id = mysqli_insert_id($conn);
+        mysqli_stmt_close($stmt);
+    }
+
+    // Clear existing cart items for this cart
+    mysqli_query($conn, "DELETE FROM cart_item WHERE cart_id = $cart_id");
+
+    // Insert current items
+    foreach ($_SESSION['cart'] as $product_id => $qty) {
+        $product_id = (int)$product_id;
+        $qty = (int)$qty;
+
+        $res = mysqli_query($conn, "SELECT price FROM products WHERE id = $product_id");
+        if (!$res || mysqli_num_rows($res) === 0) continue;
+
+        $product = mysqli_fetch_assoc($res);
+        $price = $product['price'];
+        $subtotal = $price * $qty;
+
+        $stmt = mysqli_prepare($conn, "INSERT INTO cart_item (cart_id, product_id, quantity, price, subtotal) VALUES (?, ?, ?, ?, ?)");
+        mysqli_stmt_bind_param($stmt, "iiidd", $cart_id, $product_id, $qty, $price, $subtotal);
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
+    }
 }
 
-// Sync session cart to DB
-syncCartToDatabase($conn, $user_id, $_SESSION['cart']);
-
-$total = 0;
+// Prepare display data
 $cart_items = [];
+$total = 0.0;
+
 if (!empty($_SESSION['cart'])) {
-  $ids = implode(',', array_keys($_SESSION['cart']));
-  $query = "SELECT * FROM products WHERE id IN ($ids)";
-  $result = mysqli_query($conn, $query);
-  while ($row = mysqli_fetch_assoc($result)) {
-    $pid = $row['id'];
-    $qty = $_SESSION['cart'][$pid];
-    $subtotal = $qty * $row['price'];
-    $total += $subtotal;
-    $cart_items[] = [
-      'id' => $pid,
-      'name' => $row['name'],
-      'image' => $row['image'],
-      'price' => $row['price'],
-      'quantity' => $qty,
-      'stock' => $row['stock'],
-      'subtotal' => $subtotal
-    ];
-  }
+    $ids = implode(',', array_map('intval', array_keys($_SESSION['cart'])));
+    $result = mysqli_query($conn, "SELECT id, name, price, stock, image FROM products WHERE id IN ($ids)");
+    $products = [];
+    while ($row = mysqli_fetch_assoc($result)) {
+        $products[$row['id']] = $row;
+    }
+
+    foreach ($_SESSION['cart'] as $product_id => $qty) {
+        if (!isset($products[$product_id])) continue;
+        $product = $products[$product_id];
+        $subtotal = $product['price'] * $qty;
+
+        $cart_items[] = [
+            'id' => $product_id,
+            'name' => $product['name'],
+            'price' => $product['price'],
+            'stock' => $product['stock'],
+            'image' => $product['image'],
+            'quantity' => $qty,
+            'subtotal' => $subtotal
+        ];
+
+        $total += $subtotal;
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -157,8 +148,8 @@ if (!empty($_SESSION['cart'])) {
         <?php foreach ($cart_items as $item): ?>
           <tr>
             <td>
-              <img src="<?= $item['image'] ?>" alt="<?= $item['name'] ?>" style="width: 50px; height: 50px; object-fit: cover;">
-              <?= $item['name'] ?>
+              <img src="<?= htmlspecialchars($item['image']) ?>" alt="<?= htmlspecialchars($item['name']) ?>" style="width: 50px; height: 50px; object-fit: cover;">
+              <?= htmlspecialchars($item['name']) ?>
             </td>
             <td>₱<?= number_format($item['price'], 2) ?></td>
             <td>

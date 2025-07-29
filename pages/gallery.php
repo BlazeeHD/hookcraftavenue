@@ -8,6 +8,7 @@ if (!isset($_SESSION['cart'])) {
 $cart_count = count($_SESSION['cart']);
 
 // User session logic
+$cart_count = array_sum($_SESSION['cart']);
 $isLoggedIn = isset($_SESSION['user_id']);
 $userName = $isLoggedIn ? $_SESSION['user_name'] : '';
 ?>

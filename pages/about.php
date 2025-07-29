@@ -3,15 +3,18 @@ if (session_status() === PHP_SESSION_NONE) {
   session_start();
 }
 
-// Check if user is logged in
-$isLoggedIn = isset($_SESSION['user_id']);
-$userName = $isLoggedIn ? $_SESSION['user_name'] : '';
-
 // Initialize cart if not set
 if (!isset($_SESSION['cart'])) {
   $_SESSION['cart'] = [];
 }
-$cart_count = count($_SESSION['cart']);
+$cart_count = array_sum($_SESSION['cart']);
+
+// Check if user is logged in
+$isLoggedIn = isset($_SESSION['user_id']);
+$userName = $isLoggedIn ? $_SESSION['user_name'] : '';
+
+
+$cart_count = array_sum($_SESSION['cart']);
 ?>
 <!DOCTYPE html>
 <html lang="en">

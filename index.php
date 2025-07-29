@@ -8,7 +8,7 @@ include('pages/signup_modal.php');
 if (!isset($_SESSION['cart'])) {
   $_SESSION['cart'] = [];
 }
-$cart_count = count($_SESSION['cart']);
+$cart_count = array_sum($_SESSION['cart']);
 $isLoggedIn = isset($_SESSION['user_id']);
 $userName = $_SESSION['user_name'] ?? '';
 ?>

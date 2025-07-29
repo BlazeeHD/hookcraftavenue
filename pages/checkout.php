@@ -2,6 +2,7 @@
 include '../includes/db.php';
 session_start();
 
+// Initialize cart if not set
 if (!isset($_SESSION['cart'])) {
   $_SESSION['cart'] = [];
 }
@@ -12,6 +13,7 @@ if (!empty($_SESSION['cart'])) {
   $ids = implode(',', array_keys($_SESSION['cart']));
   $query = "SELECT * FROM products WHERE id IN ($ids)";
   $result = mysqli_query($conn, $query);
+
   while ($row = mysqli_fetch_assoc($result)) {
     $pid = $row['id'];
     $qty = $_SESSION['cart'][$pid];
@@ -28,6 +30,7 @@ if (!empty($_SESSION['cart'])) {
   }
 }
 
+// Handle checkout form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_checkout'])) {
   $name = trim($_POST['name']);
   $address = trim($_POST['address']);
@@ -36,16 +39,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_checkout'])) 
   $payment_status = 'Pending';
 
   if ($name && $address && $phone && !empty($cart_items)) {
+    // Insert into orders
     $stmt = $conn->prepare("INSERT INTO orders (customer_name, address, phone, total, payment_method, payment_status) VALUES (?, ?, ?, ?, ?, ?)");
     $stmt->bind_param("ssssss", $name, $address, $phone, $total, $payment_method, $payment_status);
     $stmt->execute();
     $order_id = $stmt->insert_id;
 
-    $insert_items = $conn->prepare("INSERT INTO order_item (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)");
+    // Insert order items with subtotal
+    $insert_items = $conn->prepare("INSERT INTO order_item (order_id, product_id, quantity, price, subtotal) VALUES (?, ?, ?, ?, ?)");
     $update_stock = $conn->prepare("UPDATE products SET stock = stock - ? WHERE id = ? AND stock >= ?");
 
     foreach ($cart_items as $item) {
-      $insert_items->bind_param("iiid", $order_id, $item['id'], $item['quantity'], $item['price']);
+      $insert_items->bind_param("iiidd", $order_id, $item['id'], $item['quantity'], $item['price'], $item['subtotal']);
       $insert_items->execute();
 
       $qty = $item['quantity'];
@@ -54,7 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_checkout'])) 
       $update_stock->execute();
     }
 
-    // Formspree Notification (without file)
+    // Optional: Formspree Notification
     $formspree_url = "https://formspree.io/f/xjkvwyyq";
     $body = "name=$name&address=$address&phone=$phone&total=₱$total";
     foreach ($cart_items as $item) {
@@ -69,6 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_checkout'])) 
     curl_exec($ch);
     curl_close($ch);
 
+    // Clear cart
     $_SESSION['cart'] = [];
     echo '<script>window.location="thankyou.php?total=' . $total . '";</script>';
     exit();
@@ -81,8 +87,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_checkout'])) 
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Checkout</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
@@ -91,6 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_checkout'])) 
     <a class="navbar-brand" href="shop.php">HookcraftAvenue</a>
   </div>
 </nav>
+
 <div class="container mt-5">
   <h2 class="mb-4">Checkout</h2>
   <form method="POST">
@@ -106,7 +113,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_checkout'])) 
             <option value="">Select Region</option>
             <option value="Region XI">Region XI</option>
             <option value="Region VII">Region VII</option>
-            <!-- Add more regions if needed -->
           </select>
         </div>
         <div class="col-md-4">
@@ -114,7 +120,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_checkout'])) 
             <option value="">Select Province</option>
             <option value="Davao del Sur">Davao del Sur</option>
             <option value="Cebu">Cebu</option>
-            <!-- Add more provinces -->
           </select>
         </div>
         <div class="col-md-4">
@@ -122,7 +127,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_checkout'])) 
             <option value="">Select City / Municipality</option>
             <option value="Davao City">Davao City</option>
             <option value="Cebu City">Cebu City</option>
-            <!-- Add more cities -->
           </select>
         </div>
         <div class="col-md-6">
@@ -142,11 +146,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_checkout'])) 
       <label class="form-label">Payment Method</label><br>
       <input type="radio" name="payment_method" value="GCash" checked> GCash (Manual Payment)
     </div>
+
     <h4>Order Summary</h4>
     <ul class="list-group mb-3">
       <?php foreach ($cart_items as $item): ?>
         <li class="list-group-item d-flex justify-content-between align-items-center">
-          <?= $item['name'] ?> x <?= $item['quantity'] ?>
+          <?= htmlspecialchars($item['name']) ?> x <?= $item['quantity'] ?>
           <span>₱<?= number_format($item['subtotal'], 2) ?></span>
         </li>
       <?php endforeach; ?>
@@ -155,11 +160,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_checkout'])) 
         <strong>₱<?= number_format($total, 2) ?></strong>
       </li>
     </ul>
+
     <div class="d-flex justify-content-between">
       <a href="cart.php" class="btn btn-secondary">← Go Back to Cart</a>
       <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#confirmModal">Place Order</button>
     </div>
 
+    <!-- Confirmation Modal -->
     <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
       <div class="modal-dialog">
         <div class="modal-content">
@@ -167,9 +174,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_checkout'])) 
             <h5 class="modal-title" id="confirmModalLabel">Confirm Order</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
-          <div class="modal-body">
-            Are you sure you want to place this order?
-          </div>
+          <div class="modal-body">Are you sure you want to place this order?</div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
             <button type="submit" name="confirm_checkout" class="btn btn-success">Yes, Place Order</button>
@@ -179,9 +184,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_checkout'])) 
     </div>
   </form>
 </div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-  document.querySelector('form').addEventListener('submit', function() {
+  document.querySelector('form').addEventListener('submit', function () {
     const region = document.querySelector('[name="region"]').value;
     const province = document.querySelector('[name="province"]').value;
     const city = document.querySelector('[name="city"]').value;
