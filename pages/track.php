@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Track Order</title>
+  <title>Personal Settings</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
@@ -42,6 +42,14 @@
       font-size: 18px;
       cursor: pointer;
       color: #555;
+    }
+
+    .topbar button {
+      background: none;
+      border: none;
+      color: inherit;
+      font: inherit;
+      cursor: pointer;
     }
 
     .main {
@@ -90,170 +98,260 @@
       padding: 30px;
     }
 
-    .order-header {
+    .settings-header {
+      background-color: #f9c2d1;
+      display: inline-block;
+      padding: 8px 20px;
+      border-radius: 20px;
+      margin-bottom: 25px;
+      font-weight: 500;
+    }
+
+    .form-container {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background-color: #f3f3f3;
-      padding: 20px;
-      border-radius: 8px;
+      gap: 30px;
+    }
+
+    .form-left, .form-right {
+      flex: 1;
+    }
+
+    .form-group {
       margin-bottom: 20px;
     }
 
-    .order-header h2 {
-      font-size: 20px;
-      font-weight: 600;
+    .form-group input, .form-group label {
+      display: block;
+      width: 100%;
     }
 
-    .order-header .print-button {
-      padding: 10px 15px;
-      border: none;
-      background-color: #f17fb5;
-      color: white;
+    .form-group input {
+      padding: 10px;
+      border: 1px solid #ccc;
       border-radius: 5px;
-      cursor: pointer;
+      font-size: 14px;
     }
 
-    .status-bar {
-      display: flex;
-      justify-content: space-between;
-      margin: 20px 0;
-      text-align: center;
-    }
-
-    .status-step {
-      flex: 1;
-    }
-
-    .status-label {
-      display: inline-block;
-      padding: 10px 15px;
-      background-color: #f9c2d1;
-      border-radius: 25px;
-      font-weight: 500;
-      margin-bottom: 5px;
-    }
-
-    .status-time {
-      font-size: 12px;
-      color: #666;
-    }
-
-    .order-details {
-      background-color: #e4e4e4;
-      padding: 30px;
-      border-radius: 10px;
-      margin-top: 10px;
-    }
-
-    .item-row {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-    }
-
-    .item-row .item-box {
-      width: 50px;
-      height: 50px;
-      background-color: black;
-    }
-
-    .item-desc {
-      flex: 1;
-    }
-
-    .item-price {
-      font-weight: 600;
-    }
-
-    .status-paid {
-      color: green;
-      font-weight: 600;
-    }
-
-    .info-label {
+    .form-group label {
       margin-bottom: 5px;
       font-size: 14px;
-      color: #333;
+    }
+
+    .form-right h3 {
+      margin-bottom: 15px;
+    }
+
+    .toggle-group {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .toggle-group span {
+      max-width: 80%;
+      font-size: 14px;
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 50px;
+      height: 25px;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      background-color: #ccc;
+      border-radius: 25px;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      transition: 0.4s;
+      border: 1px solid #bbb;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: 0.4s;
+      border-radius: 50%;
+    }
+
+    .toggle-switch input:checked + .slider {
+      background-color: #f17fb5;
+    }
+
+    .toggle-switch input:checked + .slider:before {
+      transform: translateX(24px);
+    }
+
+    .save-button {
+      margin-top: 20px;
+      padding: 12px 30px;
+      background-color: #f17fb5;
+      border: none;
+      color: white;
+      border-radius: 25px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    /* Hidden input for image file */
+    #fileInput {
+      display: none;
     }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="topbar">
-      <div class="logo">🌸 HookcraftAvenue </div>
+      <div class="logo">🌸 HookcraftAvenue</div>
       <div class="top-icons">
-        <i class="fa fa-user" onclick="openAccountPage()"></i> My Account
-        <i class="fa fa-sign-out-alt" onclick="logout()"></i> Logout
+        <!-- Home Button -->
+        <button onclick="goHome()"><i class="fa fa-home"></i> Home</button>
+
+        <!-- Logout Button -->
+        <button onclick="logout()"><i class="fa fa-sign-out-alt"></i> Logout</button>
       </div>
     </div>
 
-    <div class="main">
-      <div class="sidebar">
-        <img src="https://via.placeholder.com/100" alt="User">
-        <button onclick="openAccountPage()"><i class="fa fa-user"></i> My Account</button>
-        <button><i class="fa fa-history"></i> Purchase History</button>
-        <button><i class="fa fa-truck"></i> Track Order</button>
-        <a href="personal setting.html"><button>Profile</button></a> <!-- Link to Profile Page -->
-  <a href="purchase history.html"><button>Settings</button></a> <!-- Link to Settings Page -->
-      </div>
+    <div class="sidebar">
+      <img id="userImage" src="https://via.placeholder.com/100" alt="User Image">
+      
+      <!-- Link to My Account Page -->
+      <a href="profile.php">
+        <button>
+          <i class="fa fa-home"></i> My Account
+        </button>
+      </a>
 
-      <div class="content">
-        <div class="order-header">
-          <div>
-            <h2>Order ID: #14324</h2>
-            <div class="info-label">Date: 07/24/2025</div>
+      <!-- Link to Purchase History Page -->
+      <a href="purchase_history.php">
+        <button>
+          <i class="fa fa-history"></i> Purchase History
+        </button>
+      </a>
+
+      <!-- Link to Track Order Page -->
+      <a href="track.php">
+        <button>
+          <i class="fa fa-truck"></i> Track Order
+        </button>
+      </a>
+    </div>
+
+    <!-- Content Section with Settings -->
+    <div class="content">
+      <div class="settings-header">Personal Setting</div>
+      <div class="form-container">
+        <div class="form-left">
+          <div class="form-group">
+            <label>First Name</label>
+            <input type="text" placeholder="Enter first name">
           </div>
-          <button class="print-button"><i class="fa fa-print"></i> Print Invoice</button>
+          <div class="form-group">
+            <label>Last Name</label>
+            <input type="text" placeholder="Enter last name">
+          </div>
+          <div class="form-group">
+            <label>Birthday</label>
+            <input type="date">
+          </div>
+          <div class="form-group">
+            <label>Phone Number</label>
+            <input type="text" placeholder="Enter phone number">
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" placeholder="Enter email">
+          </div>
+          <div class="form-group">
+            <label>Address</label>
+            <input type="text" placeholder="Enter address">
+          </div>
         </div>
 
-        <!-- Status Progress with Timestamps -->
-        <div class="status-bar">
-          <div class="status-step">
-            <div class="status-label">Packed</div>
-            <div class="status-time">07/23/2025 - 10:15 AM</div>
+        <div class="form-right">
+          <h3>Notification Setting</h3>
+          <div class="toggle-group">
+            <span><strong>Email Notification</strong><br>Receive notification via Email</span>
+            <label class="toggle-switch">
+              <input type="checkbox" checked>
+              <span class="slider"></span>
+            </label>
           </div>
-          <div class="status-step">
-            <div class="status-label">Picked</div>
-            <div class="status-time">07/23/2025 - 1:30 PM</div>
+          <div class="toggle-group">
+            <span><strong>Order Updates</strong><br>Get notified about order status changes</span>
+            <label class="toggle-switch">
+              <input type="checkbox" checked>
+              <span class="slider"></span>
+            </label>
           </div>
-          <div class="status-step">
-            <div class="status-label">Out for Delivery</div>
-            <div class="status-time">07/24/2025 - 8:00 AM</div>
+          <div class="toggle-group">
+            <span><strong>Promotion & Offers</strong><br>Receive promotional emails and special offers</span>
+            <label class="toggle-switch">
+              <input type="checkbox" checked>
+              <span class="slider"></span>
+            </label>
           </div>
-          <div class="status-step">
-            <div class="status-label">Delivered</div>
-            <div class="status-time">07/24/2025 - 1:20 PM</div>
+          <div class="toggle-group">
+            <span><strong>Newsletters</strong><br>Subscribe to our monthly newsletters</span>
+            <label class="toggle-switch">
+              <input type="checkbox">
+              <span class="slider"></span>
+            </label>
           </div>
-        </div>
 
-        <!-- Order Details -->
-        <div class="order-details">
-          <h3>Item Ordered</h3>
-          <div class="item-row">
-            <div class="item-box"></div>
-            <div class="item-desc">Black</div>
-            <div class="item-price">350</div>
-            <div class="status-paid">Paid</div>
-          </div>
+          <button class="save-button">Save</button>
         </div>
       </div>
     </div>
   </div>
 
+  <input type="file" id="fileInput" accept="image/*" onchange="updateImage(event)">
+
   <script>
-    // Function to open account page
-    function openAccountPage() {
-      window.location.href = "my-account.html"; // Redirect to the user's account page
+    // Redirect to Home page
+    function goHome() {
+      alert("Redirecting to Home...");
+      window.location.href = 'index.php'; // Redirect to the homepage (index.php)
     }
 
-    // Function to handle logout
+    // Logout function
     function logout() {
-      // Clear session data or cookies (example)
-      sessionStorage.clear();
-      localStorage.clear();
+      alert("Logging out...");
+      window.location.href = 'index.php'; // Redirect to the homepage or login page after logging out
+    }
 
-      // Redirect to login page
-      window.location.href = "login.html";
+    // Function to handle the profile image change
+    function changeProfile() {
+      document.getElementById('fileInput').click(); // Trigger the file input click
+    }
+
+    // Update the profile image
+    function updateImage(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          document.getElementById('userImage').src = e.target.result; // Update image source
+        };
+        reader.readAsDataURL(file);
+      }
     }
   </script>
+</body>
+</html>
