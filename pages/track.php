@@ -14,7 +14,7 @@
     }
 
     body {
-      background-color: #f7ececff;
+      background-color: #d3bebe;
     }
 
     .container {

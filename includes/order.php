@@ -49,7 +49,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['order_id']) && isset(
             $targetFile = $targetDir . $filename;
             
             if (move_uploaded_file($_FILES["payment_proof"]["tmp_name"], $targetFile)) {
-                $stmt = $conn->prepare("UPDATE orders SET payment_proof = ?, payment_status = 'Successful', updated_at = NOW() WHERE id = ?");
+                $stmt = $conn->prepare("UPDATE orders SET payment_proof = ?, payment_status = 'Successful' WHERE id = ?");
                 $stmt->bind_param("si", $filename, $orderId);
                 
                 if ($stmt->execute()) {
@@ -76,7 +76,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['mark_unsuccessful']))
     $orderId = filter_var($_POST['order_id'], FILTER_VALIDATE_INT);
     
     if ($orderId !== false) {
-        $stmt = $conn->prepare("UPDATE orders SET payment_status = 'Unsuccessful', updated_at = NOW() WHERE id = ?");
+        $stmt = $conn->prepare("UPDATE orders SET payment_status = 'Unsuccessful' WHERE id = ?");
         $stmt->bind_param("i", $orderId);
         
         if ($stmt->execute()) {
@@ -92,7 +92,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['edit_status'])) {
     $newStatus = filter_var($_POST['new_status'], FILTER_SANITIZE_STRING);
     
     if ($orderId !== false && in_array($newStatus, ['Pending', 'Successful', 'Unsuccessful'])) {
-        $updateQuery = "UPDATE orders SET payment_status = ?, updated_at = NOW()";
+        $updateQuery = "UPDATE orders SET payment_status = ?";
         $params = [$newStatus];
         $types = "s";
         
