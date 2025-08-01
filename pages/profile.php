@@ -209,7 +209,6 @@
       font-weight: 500;
     }
 
-    /* Hidden input for image file */
     #fileInput {
       display: none;
     }
@@ -217,105 +216,104 @@
 </head>
 <body>
   <div class="container">
+    <!-- Top Navigation Bar -->
     <div class="topbar">
       <div class="logo">🌸 HookcraftAvenue</div>
       <div class="top-icons">
-        <!-- Home Button -->
         <button onclick="goHome()"><i class="fa fa-home"></i> Home</button>
-
-        <!-- Logout Button -->
         <button onclick="logout()"><i class="fa fa-sign-out-alt"></i> Logout</button>
       </div>
     </div>
 
-    <div class="sidebar">
-      <img id="userImage" src="https://via.placeholder.com/100" alt="User Image">
-      
-      <!-- Link to My Account Page -->
-      <a href="profile.php">
-        <button>
-          <i class="fa fa-home"></i> My Account
-        </button>
-      </a>
+    <!-- Main layout: Sidebar + Content -->
+    <div class="main">
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <img id="userImage" src="https://via.placeholder.com/100" alt="User Image">
 
-      <!-- Link to Purchase History Page -->
-      <a href="purchase_history.php">
-        <button>
-          <i class="fa fa-history"></i> Purchase History
-        </button>
-      </a>
+        <a href="profile.php">
+          <button>
+            <i class="fa-solid fa-user-circle"></i> My Account
+          </button>
+        </a>
 
-      <!-- Link to Track Order Page -->
-      <a href="track.php">
-        <button>
-          <i class="fa fa-truck"></i> Track Order
-        </button>
-      </a>
-    </div>
+        <a href="/hookcraftavenue/pages/purchase_history.php">
+          <button>
+            <i class="fa fa-history"></i> Purchase History
+          </button>
+        </a>
 
-    <!-- Content Section with Settings -->
-    <div class="content">
-      <div class="settings-header">Personal Setting</div>
-      <div class="form-container">
-        <div class="form-left">
-          <div class="form-group">
-            <label>First Name</label>
-            <input type="text" placeholder="Enter first name">
-          </div>
-          <div class="form-group">
-            <label>Last Name</label>
-            <input type="text" placeholder="Enter last name">
-          </div>
-          <div class="form-group">
-            <label>Birthday</label>
-            <input type="date">
-          </div>
-          <div class="form-group">
-            <label>Phone Number</label>
-            <input type="text" placeholder="Enter phone number">
-          </div>
-          <div class="form-group">
-            <label>Email</label>
-            <input type="email" placeholder="Enter email">
-          </div>
-          <div class="form-group">
-            <label>Address</label>
-            <input type="text" placeholder="Enter address">
-          </div>
-        </div>
+        <a href="/hookcraftavenue/pages/track.php">
+          <button>
+            <i class="fa fa-truck"></i> Track Order
+          </button>
+        </a>
+      </div>
 
-        <div class="form-right">
-          <h3>Notification Setting</h3>
-          <div class="toggle-group">
-            <span><strong>Email Notification</strong><br>Receive notification via Email</span>
-            <label class="toggle-switch">
-              <input type="checkbox" checked>
-              <span class="slider"></span>
-            </label>
-          </div>
-          <div class="toggle-group">
-            <span><strong>Order Updates</strong><br>Get notified about order status changes</span>
-            <label class="toggle-switch">
-              <input type="checkbox" checked>
-              <span class="slider"></span>
-            </label>
-          </div>
-          <div class="toggle-group">
-            <span><strong>Promotion & Offers</strong><br>Receive promotional emails and special offers</span>
-            <label class="toggle-switch">
-              <input type="checkbox" checked>
-              <span class="slider"></span>
-            </label>
-          </div>
-          <div class="toggle-group">
-            <span><strong>Newsletters</strong><br>Subscribe to our monthly newsletters</span>
-            <label class="toggle-switch">
-              <input type="checkbox">
-              <span class="slider"></span>
-            </label>
+      <!-- Settings Form -->
+      <div class="content">
+        <div class="settings-header">Personal Setting</div>
+        <div class="form-container">
+          <div class="form-left">
+            <div class="form-group">
+              <label>First Name</label>
+              <input type="text" placeholder="Enter first name">
+            </div>
+            <div class="form-group">
+              <label>Last Name</label>
+              <input type="text" placeholder="Enter last name">
+            </div>
+            <div class="form-group">
+              <label>Birthday</label>
+              <input type="date">
+            </div>
+            <div class="form-group">
+              <label>Phone Number</label>
+              <input type="text" placeholder="Enter phone number">
+            </div>
+            <div class="form-group">
+              <label>Email</label>
+              <input type="email" placeholder="Enter email">
+            </div>
+            <div class="form-group">
+              <label>Address</label>
+              <input type="text" placeholder="Enter address">
+            </div>
           </div>
 
-          <button class="save-button">Save</button>
+          <div class="form-right">
+            <h3>Notification Setting</h3>
+            <div class="toggle-group">
+              <span><strong>Email Notification</strong><br>Receive notification via Email</span>
+              <label class="toggle-switch">
+                <input type="checkbox" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+            <div class="toggle-group">
+              <span><strong>Order Updates</strong><br>Get notified about order status changes</span>
+              <label class="toggle-switch">
+                <input type="checkbox" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+            <div class="toggle-group">
+              <span><strong>Promotion & Offers</strong><br>Receive promotional emails and special offers</span>
+              <label class="toggle-switch">
+                <input type="checkbox" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+            <div class="toggle-group">
+              <span><strong>Newsletters</strong><br>Subscribe to our monthly newsletters</span>
+              <label class="toggle-switch">
+                <input type="checkbox">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <button class="save-button">Save</button>
+          </div>
         </div>
       </div>
     </div>
@@ -324,30 +322,26 @@
   <input type="file" id="fileInput" accept="image/*" onchange="updateImage(event)">
 
   <script>
-    // Redirect to Home page
     function goHome() {
       alert("Redirecting to Home...");
-      window.location.href = 'index.php'; // Redirect to the homepage (index.php)
+      window.location.href = 'index.php';
     }
 
-    // Logout function
     function logout() {
       alert("Logging out...");
-      window.location.href = 'index.php'; // Redirect to the homepage or login page after logging out
+      window.location.href = 'index.php';
     }
 
-    // Function to handle the profile image change
     function changeProfile() {
-      document.getElementById('fileInput').click(); // Trigger the file input click
+      document.getElementById('fileInput').click();
     }
 
-    // Update the profile image
     function updateImage(event) {
       const file = event.target.files[0];
       if (file) {
         const reader = new FileReader();
         reader.onload = function(e) {
-          document.getElementById('userImage').src = e.target.result; // Update image source
+          document.getElementById('userImage').src = e.target.result;
         };
         reader.readAsDataURL(file);
       }
