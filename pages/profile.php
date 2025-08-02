@@ -1,3 +1,24 @@
+<?php
+include '../includes/db.php';
+session_start();
+
+if (!isset($_SESSION['user_id'])) {
+    header("Location: /hookcraftavenue/index.php"); // redirect if not logged in
+    exit();
+}
+
+$user_id = (int)$_SESSION['user_id'];
+
+// Fetch name from the database
+$sql = "SELECT name FROM users WHERE id = ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$result = $stmt->get_result();
+$user = $result->fetch_assoc();
+
+$user_name = $user ? htmlspecialchars($user['name']) : "Guest";
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -37,8 +58,19 @@
       color: #d9539f;
     }
 
+    .topbar .top-icons {
+      display: flex;
+      align-items: center;
+    }
+
+    .topbar .top-icons span {
+      font-weight: 500;
+      margin-right: 20px;
+      color: #333;
+    }
+
     .topbar .top-icons i {
-      margin-left: 30px;
+      margin-left: 15px;
       font-size: 18px;
       cursor: pointer;
       color: #555;
@@ -70,6 +102,12 @@
       border-radius: 50%;
       object-fit: cover;
       margin-bottom: 10px;
+    }
+
+    .sidebar h3 {
+      margin-bottom: 20px;
+      font-size: 18px;
+      color: #333;
     }
 
     .sidebar button {
@@ -209,7 +247,6 @@
       font-weight: 500;
     }
 
-    /* Hidden input for image file */
     #fileInput {
       display: none;
     }
@@ -220,40 +257,27 @@
     <div class="topbar">
       <div class="logo">🌸 HookcraftAvenue</div>
       <div class="top-icons">
-        <!-- Home Button -->
+     
         <button onclick="goHome()"><i class="fa fa-home"></i> Home</button>
-
-        <!-- Logout Button -->
         <button onclick="logout()"><i class="fa fa-sign-out-alt"></i> Logout</button>
       </div>
     </div>
 
     <div class="sidebar">
       <img id="userImage" src="https://via.placeholder.com/100" alt="User Image">
-      
-      <!-- Link to My Account Page -->
+      <h3><?php echo $user_name; ?></h3>
+
       <a href="profile.php">
-        <button>
-          <i class="fa fa-home"></i> My Account
-        </button>
+        <button><i class="fa fa-home"></i> My Account</button>
       </a>
-
-      <!-- Link to Purchase History Page -->
       <a href="purchase_history.php">
-        <button>
-          <i class="fa fa-history"></i> Purchase History
-        </button>
+        <button><i class="fa fa-history"></i> Purchase History</button>
       </a>
-
-      <!-- Link to Track Order Page -->
       <a href="track.php">
-        <button>
-          <i class="fa fa-truck"></i> Track Order
-        </button>
+        <button><i class="fa fa-truck"></i> Track Order</button>
       </a>
     </div>
 
-    <!-- Content Section with Settings -->
     <div class="content">
       <div class="settings-header">Personal Setting</div>
       <div class="form-container">
@@ -324,30 +348,26 @@
   <input type="file" id="fileInput" accept="image/*" onchange="updateImage(event)">
 
   <script>
-    // Redirect to Home page
     function goHome() {
       alert("Redirecting to Home...");
-      window.location.href = 'index.php'; // Redirect to the homepage (index.php)
+      window.location.href = '/hookcraftavenue/index.php';
     }
 
-    // Logout function
     function logout() {
       alert("Logging out...");
-      window.location.href = 'index.php'; // Redirect to the homepage or login page after logging out
+      window.location.href = '/hookcraftavenue/pages/logout.php';
     }
 
-    // Function to handle the profile image change
     function changeProfile() {
-      document.getElementById('fileInput').click(); // Trigger the file input click
+      document.getElementById('fileInput').click();
     }
 
-    // Update the profile image
     function updateImage(event) {
       const file = event.target.files[0];
       if (file) {
         const reader = new FileReader();
         reader.onload = function(e) {
-          document.getElementById('userImage').src = e.target.result; // Update image source
+          document.getElementById('userImage').src = e.target.result;
         };
         reader.readAsDataURL(file);
       }

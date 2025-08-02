@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -327,13 +328,13 @@
     // Redirect to Home page
     function goHome() {
       alert("Redirecting to Home...");
-      window.location.href = 'index.php'; // Redirect to the homepage (index.php)
+      window.location.href = '/hookcraftavenue/index.php'; // Redirect to the homepage (index.php)
     }
 
     // Logout function
     function logout() {
       alert("Logging out...");
-      window.location.href = 'index.php'; // Redirect to the homepage or login page after logging out
+       window.location.href = '/hookcraftavenue/index.php';// Redirect to the homepage or login page after logging out
     }
 
     // Function to handle the profile image change
