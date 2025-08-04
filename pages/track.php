@@ -261,13 +261,30 @@
   <!-- JavaScript -->
   <script>
     function goHome() {
-      window.location.href = "index.html"; // Update with your actual homepage
+      alert("Redirecting to Home...");
+      window.location.href = 'index.php'; // Redirect to the homepage (index.php)
     }
 
     function logout() {
-      sessionStorage.clear();
-      localStorage.clear();
-      window.location.href = "login.html"; // Update if different logout process
+      alert("Logging out...");
+      window.location.href = 'index.php'; // Redirect to the homepage or login page after logging out
+    }
+
+    // Function to handle the profile image change
+    function changeProfile() {
+      document.getElementById('fileInput').click(); // Trigger the file input click
+    }
+
+    // Update the profile image
+    function updateImage(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          document.getElementById('userImage').src = e.target.result; // Update image source
+        };
+        reader.readAsDataURL(file);
+      }
     }
   </script>
 </body>

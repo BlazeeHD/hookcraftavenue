@@ -1,3 +1,24 @@
+<?php
+include '../includes/db.php';
+session_start();
+
+if (!isset($_SESSION['user_id'])) {
+    header("Location: /hookcraftavenue/index.php"); // redirect if not logged in
+    exit();
+}
+
+$user_id = (int)$_SESSION['user_id'];
+
+// Fetch name from the database
+$sql = "SELECT name FROM users WHERE id = ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$result = $stmt->get_result();
+$user = $result->fetch_assoc();
+
+$user_name = $user ? htmlspecialchars($user['name']) : "Guest";
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -37,8 +58,19 @@
       color: #d9539f;
     }
 
+    .topbar .top-icons {
+      display: flex;
+      align-items: center;
+    }
+
+    .topbar .top-icons span {
+      font-weight: 500;
+      margin-right: 20px;
+      color: #333;
+    }
+
     .topbar .top-icons i {
-      margin-left: 30px;
+      margin-left: 15px;
       font-size: 18px;
       cursor: pointer;
       color: #555;
@@ -70,6 +102,12 @@
       border-radius: 50%;
       object-fit: cover;
       margin-bottom: 10px;
+    }
+
+    .sidebar h3 {
+      margin-bottom: 20px;
+      font-size: 18px;
+      color: #333;
     }
 
     .sidebar button {
@@ -220,66 +258,67 @@
     <div class="topbar">
       <div class="logo">🌸 HookcraftAvenue</div>
       <div class="top-icons">
+        <!-- Home Button -->
         <button onclick="goHome()"><i class="fa fa-home"></i> Home</button>
         <button onclick="logout()"><i class="fa fa-sign-out-alt"></i> Logout</button>
       </div>
     </div>
 
-    <!-- Main layout: Sidebar + Content -->
-    <div class="main">
-      <!-- Sidebar -->
-      <div class="sidebar">
-        <img id="userImage" src="https://via.placeholder.com/100" alt="User Image">
+    <div class="sidebar">
+      <img id="userImage" src="https://via.placeholder.com/100" alt="User Image">
+      
+      <!-- Link to My Account Page -->
+      <a href="profile.php">
+        <button>
+          <i class="fa fa-home"></i> My Account
+        </button>
+      </a>
 
-        <a href="profile.php">
-          <button>
-            <i class="fa-solid fa-user-circle"></i> My Account
-          </button>
-        </a>
+      <!-- Link to Purchase History Page -->
+      <a href="purchase_history.php">
+        <button>
+          <i class="fa fa-history"></i> Purchase History
+        </button>
+      </a>
 
-        <a href="/hookcraftavenue/pages/purchase_history.php">
-          <button>
-            <i class="fa fa-history"></i> Purchase History
-          </button>
-        </a>
+      <!-- Link to Track Order Page -->
+      <a href="track.php">
+        <button>
+          <i class="fa fa-truck"></i> Track Order
+        </button>
+      </a>
+    </div>
 
-        <a href="/hookcraftavenue/pages/track.php">
-          <button>
-            <i class="fa fa-truck"></i> Track Order
-          </button>
-        </a>
-      </div>
-
-      <!-- Settings Form -->
-      <div class="content">
-        <div class="settings-header">Personal Setting</div>
-        <div class="form-container">
-          <div class="form-left">
-            <div class="form-group">
-              <label>First Name</label>
-              <input type="text" placeholder="Enter first name">
-            </div>
-            <div class="form-group">
-              <label>Last Name</label>
-              <input type="text" placeholder="Enter last name">
-            </div>
-            <div class="form-group">
-              <label>Birthday</label>
-              <input type="date">
-            </div>
-            <div class="form-group">
-              <label>Phone Number</label>
-              <input type="text" placeholder="Enter phone number">
-            </div>
-            <div class="form-group">
-              <label>Email</label>
-              <input type="email" placeholder="Enter email">
-            </div>
-            <div class="form-group">
-              <label>Address</label>
-              <input type="text" placeholder="Enter address">
-            </div>
+    <!-- Content Section with Settings -->
+    <div class="content">
+      <div class="settings-header">Personal Setting</div>
+      <div class="form-container">
+        <div class="form-left">
+          <div class="form-group">
+            <label>First Name</label>
+            <input type="text" placeholder="Enter first name">
           </div>
+          <div class="form-group">
+            <label>Last Name</label>
+            <input type="text" placeholder="Enter last name">
+          </div>
+          <div class="form-group">
+            <label>Birthday</label>
+            <input type="date">
+          </div>
+          <div class="form-group">
+            <label>Phone Number</label>
+            <input type="text" placeholder="Enter phone number">
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" placeholder="Enter email">
+          </div>
+          <div class="form-group">
+            <label>Address</label>
+            <input type="text" placeholder="Enter address">
+          </div>
+        </div>
 
           <div class="form-right">
             <h3>Notification Setting</h3>
@@ -324,12 +363,12 @@
   <script>
     function goHome() {
       alert("Redirecting to Home...");
-      window.location.href = 'index.php';
+      window.location.href = 'index.php'; // Redirect to the homepage (index.php)
     }
 
     function logout() {
       alert("Logging out...");
-      window.location.href = 'index.php';
+      window.location.href = 'index.php'; // Redirect to the homepage or login page after logging out
     }
 
     function changeProfile() {

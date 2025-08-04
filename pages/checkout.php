@@ -1,20 +1,24 @@
 <?php
 include '../includes/db.php';
 session_start();
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
-// Initialize cart if not set
 if (!isset($_SESSION['cart'])) {
   $_SESSION['cart'] = [];
 }
 
 $total = 0;
 $cart_items = [];
-if (!empty($_SESSION['cart'])) {
-  $ids = implode(',', array_keys($_SESSION['cart']));
-  $query = "SELECT * FROM products WHERE id IN ($ids)";
-  $result = mysqli_query($conn, $query);
 
-  while ($row = mysqli_fetch_assoc($result)) {
+if (!empty($_SESSION['cart'])) {
+  $ids = array_keys($_SESSION['cart']);
+  $placeholders = implode(',', array_fill(0, count($ids), '?'));
+  $stmt = $conn->prepare("SELECT * FROM products WHERE id IN ($placeholders)");
+  $stmt->bind_param(str_repeat('i', count($ids)), ...$ids);
+  $stmt->execute();
+  $result = $stmt->get_result();
+
+  while ($row = $result->fetch_assoc()) {
     $pid = $row['id'];
     $qty = $_SESSION['cart'][$pid];
     $subtotal = $qty * $row['price'];
@@ -30,7 +34,6 @@ if (!empty($_SESSION['cart'])) {
   }
 }
 
-// Handle checkout form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_checkout'])) {
   $name = trim($_POST['name']);
   $address = trim($_POST['address']);
@@ -39,50 +42,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_checkout'])) 
   $payment_status = 'Pending';
 
   if ($name && $address && $phone && !empty($cart_items)) {
-    // Insert into orders
-    $stmt = $conn->prepare("INSERT INTO orders (customer_name, address, phone, total, payment_method, payment_status) VALUES (?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("ssssss", $name, $address, $phone, $total, $payment_method, $payment_status);
-    $stmt->execute();
-    $order_id = $stmt->insert_id;
+    try {
+      $conn->begin_transaction();
 
-    // Insert order items with subtotal
-    $insert_items = $conn->prepare("INSERT INTO order_item (order_id, product_id, quantity, price, subtotal) VALUES (?, ?, ?, ?, ?)");
-    $update_stock = $conn->prepare("UPDATE products SET stock = stock - ? WHERE id = ? AND stock >= ?");
+      $stmt = $conn->prepare("INSERT INTO orders (customer_name, address, phone, total, payment_method, payment_status) VALUES (?, ?, ?, ?, ?, ?)");
+      $stmt->bind_param("sssiss", $name, $address, $phone, $total, $payment_method, $payment_status);
+      $stmt->execute();
+      $order_id = $stmt->insert_id;
 
-    foreach ($cart_items as $item) {
-      $insert_items->bind_param("iiidd", $order_id, $item['id'], $item['quantity'], $item['price'], $item['subtotal']);
-      $insert_items->execute();
+      $insert_items = $conn->prepare("INSERT INTO order_item (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)");
+      $update_stock = $conn->prepare("UPDATE products SET stock = stock - ? WHERE id = ? AND stock >= ?");
 
-      $qty = $item['quantity'];
-      $pid = $item['id'];
-      $update_stock->bind_param("iii", $qty, $pid, $qty);
-      $update_stock->execute();
+      foreach ($cart_items as $item) {
+        $insert_items->bind_param("iiid", $order_id, $item['id'], $item['quantity'], $item['price']);
+        $insert_items->execute();
+
+        $qty = $item['quantity'];
+        $pid = $item['id'];
+        $update_stock->bind_param("iii", $qty, $pid, $qty);
+        $update_stock->execute();
+      }
+
+      $conn->commit();
+
+      // Optional Formspree email
+      $formspree_url = "https://formspree.io/f/xjkvwyyq";
+      $body = "name=$name&address=$address&phone=$phone&total=₱$total";
+      foreach ($cart_items as $item) {
+        $body .= "&items[]=" . urlencode($item['name'] . ' x' . $item['quantity']);
+      }
+
+      $ch = curl_init($formspree_url);
+      curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+      curl_setopt($ch, CURLOPT_POST, true);
+      curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
+      curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/x-www-form-urlencoded']);
+      curl_exec($ch);
+      curl_close($ch);
+
+      $_SESSION['cart'] = [];
+      echo '<script>window.location="thankyou.php?total=' . $total . '";</script>';
+      exit();
+    } catch (Exception $e) {
+      $conn->rollback();
+      echo '<script>alert("Checkout failed: ' . $e->getMessage() . '");</script>';
     }
-
-    // Optional: Formspree Notification
-    $formspree_url = "https://formspree.io/f/xjkvwyyq";
-    $body = "name=$name&address=$address&phone=$phone&total=₱$total";
-    foreach ($cart_items as $item) {
-      $body .= "&items[]=" . urlencode($item['name'] . ' x' . $item['quantity']);
-    }
-
-    $ch = curl_init($formspree_url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/x-www-form-urlencoded']);
-    curl_exec($ch);
-    curl_close($ch);
-
-    // Clear cart
-    $_SESSION['cart'] = [];
-    echo '<script>window.location="thankyou.php?total=' . $total . '";</script>';
-    exit();
   } else {
     echo '<script>alert("Please fill out all fields correctly.");</script>';
   }
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -105,6 +115,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_checkout'])) 
       <label for="name" class="form-label">Full Name</label>
       <input type="text" class="form-control" name="name" id="name" required>
     </div>
+
     <div class="mb-3">
       <label class="form-label">Address</label>
       <div class="row g-2">
@@ -138,10 +149,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_checkout'])) 
       </div>
       <input type="hidden" name="address" id="finalAddress">
     </div>
+
     <div class="mb-3">
       <label for="phone" class="form-label">Phone Number</label>
       <input type="tel" class="form-control" name="phone" id="phone" required pattern="[0-9]{11}" placeholder="e.g. 09123456789">
     </div>
+
     <div class="mb-3">
       <label class="form-label">Payment Method</label><br>
       <input type="radio" name="payment_method" value="GCash" checked> GCash (Manual Payment)
@@ -166,7 +179,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_checkout'])) 
       <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#confirmModal">Place Order</button>
     </div>
 
-    <!-- Confirmation Modal -->
     <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
       <div class="modal-dialog">
         <div class="modal-content">
