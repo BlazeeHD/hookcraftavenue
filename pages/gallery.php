@@ -86,7 +86,7 @@ $userName = $isLoggedIn ? $_SESSION['user_name'] : '';
               </li>
               <li class="fw-bold"><?php echo htmlspecialchars($userName); ?></li>
               <li><hr class="dropdown-divider"></li>
-              <li><a class="dropdown-item" href="pages/profile.php"><i class="bi bi-person-circle me-2"></i> Profile</a></li>
+              <li><a class="dropdown-item" href="../pages/profile.php"><i class="bi bi-person-circle me-2"></i> Profile</a></li>
               <li><a class="dropdown-item text-danger" href="pages/logout.php"><i class="bi bi-box-arrow-right me-2"></i> Logout</a></li>
             </ul>
           </li>
