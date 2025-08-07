@@ -69,7 +69,7 @@ $cart_count = array_sum($_SESSION['cart']);
         <!-- Cart -->
         <li class="nav-item me-3">
           <?php if ($isLoggedIn): ?>
-            <a class="nav-link position-relative" href="pages/cart.php">
+            <a class="nav-link position-relative" href="../pages/cart.php">
           <?php else: ?>
             <a class="nav-link position-relative" href="#" data-bs-toggle="modal" data-bs-target="#loginModal">
           <?php endif; ?>
