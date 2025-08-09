@@ -1,28 +1,71 @@
 <?php
 include 'includes/db.php'; // uses $conn (MySQLi)
 
+// --- Safe DB queries with fallbacks --- //
+
 // Get total users
 $usersResult = $conn->query("SELECT COUNT(*) as total FROM users");
-$totalUsers = $usersResult->fetch_assoc()['total'];
+if ($usersResult) {
+    $row = $usersResult->fetch_assoc();
+    $totalUsers = intval($row['total'] ?? 0);
+} else {
+    error_log("DB error (users count): " . $conn->error);
+    $totalUsers = 0;
+}
 
 // Get total orders
 $ordersResult = $conn->query("SELECT COUNT(*) as total FROM orders");
-$totalOrders = $ordersResult->fetch_assoc()['total'];
+if ($ordersResult) {
+    $row = $ordersResult->fetch_assoc();
+    $totalOrders = intval($row['total'] ?? 0);
+} else {
+    error_log("DB error (orders count): " . $conn->error);
+    $totalOrders = 0;
+}
 
-// Get total products
+// Get total products (table may not exist depending on your schema)
 $productsResult = $conn->query("SELECT COUNT(*) as total FROM products");
-$totalProducts = $productsResult->fetch_assoc()['total'];
+if ($productsResult) {
+    $row = $productsResult->fetch_assoc();
+    $totalProducts = intval($row['total'] ?? 0);
+} else {
+    // If you migrated to separate product tables, query those instead.
+    error_log("DB error (products count): " . $conn->error);
+    $totalProducts = 0;
+}
 
 // Get total revenue - only from successful payments
 $revenueResult = $conn->query("SELECT SUM(total) as total FROM orders WHERE payment_status = 'Successful'");
-$totalRevenue = $revenueResult->fetch_assoc()['total'] ?? 0;
+if ($revenueResult) {
+    $row = $revenueResult->fetch_assoc();
+    // sum might be null if no rows -> treat as 0.0
+    $totalRevenue = floatval($row['total'] ?? 0);
+} else {
+    error_log("DB error (revenue): " . $conn->error);
+    $totalRevenue = 0;
+}
 
 // Get cart count
 $cartResult = $conn->query("SELECT COUNT(*) as total FROM cart");
-$cartCount = $cartResult->fetch_assoc()['total'];
+if ($cartResult) {
+    $row = $cartResult->fetch_assoc();
+    $cartCount = intval($row['total'] ?? 0);
+} else {
+    error_log("DB error (cart count): " . $conn->error);
+    $cartCount = 0;
+}
 
-// ✅ FIX: Get recent orders with proper query
+// ✅ Get recent orders safely
+$recentOrders = [];
 $recentOrdersResult = $conn->query("SELECT id, customer_name, total, payment_status FROM orders ORDER BY created_at DESC LIMIT 6");
+if ($recentOrdersResult) {
+    while ($r = $recentOrdersResult->fetch_assoc()) {
+        $recentOrders[] = $r;
+    }
+} else {
+    error_log("DB error (recent orders): " . $conn->error);
+    $recentOrders = [];
+}
 ?>
 
 <!-- HTML PART (unchanged layout/design) -->

@@ -28,6 +28,55 @@ function generateSecureFilename($originalName) {
     return uniqid('payment_', true) . '.' . $extension;
 }
 
+// Function to get products for an order
+function getOrderProducts($conn, $orderId) {
+    // Check if order_item table exists
+    $checkTable = $conn->query("SHOW TABLES LIKE 'order_item'");
+    if ($checkTable->num_rows == 0) {
+        return "Order items table not found";
+    }
+    
+    $productQuery = "SELECT oi.quantity, oi.product_id
+                   FROM order_item oi 
+                   WHERE oi.order_id = ?";
+    
+    $productStmt = $conn->prepare($productQuery);
+    if (!$productStmt) {
+        return "Error loading products";
+    }
+    
+    $productStmt->bind_param("i", $orderId);
+    if (!$productStmt->execute()) {
+        return "Error loading products";
+    }
+    
+    $productResult = $productStmt->get_result();
+    $products = [];
+    
+    while ($item = $productResult->fetch_assoc()) {
+        // Try to get product name from products table if it exists
+        $nameQuery = $conn->query("SHOW TABLES LIKE 'products'");
+        if ($nameQuery->num_rows > 0) {
+            $nameStmt = $conn->prepare("SELECT name FROM products WHERE id = ?");
+            if ($nameStmt) {
+                $nameStmt->bind_param("i", $item['product_id']);
+                $nameStmt->execute();
+                $nameResult = $nameStmt->get_result();
+                $nameRow = $nameResult->fetch_assoc();
+                $productName = $nameRow ? $nameRow['name'] : 'Product #' . $item['product_id'];
+            } else {
+                $productName = 'Product #' . $item['product_id'];
+            }
+        } else {
+            $productName = 'Product #' . $item['product_id'];
+        }
+        
+        $products[] = $productName . ' (x' . $item['quantity'] . ')';
+    }
+    
+    return !empty($products) ? implode(', ', $products) : 'No products';
+}
+
 $message = '';
 $messageType = '';
 
@@ -348,7 +397,6 @@ $offset = ($page - 1) * $limit;
             opacity: 0.8;
         }
 
-        /* Fix modal backdrop and positioning issues */
         .modal {
             z-index: 1055 !important;
         }
@@ -361,7 +409,6 @@ $offset = ($page - 1) * $limit;
             z-index: 1056 !important;
         }
 
-        /* Ensure buttons work properly in modals */
         .modal .btn {
             position: relative;
             z-index: 1;
@@ -467,7 +514,18 @@ $offset = ($page - 1) * $limit;
             SUM(CASE WHEN payment_status = 'Successful' THEN total ELSE 0 END) as revenue
             FROM orders";
         $statsResult = $conn->query($statsQuery);
-        $stats = $statsResult->fetch_assoc();
+        if ($statsResult) {
+            $stats = $statsResult->fetch_assoc();
+        } else {
+            // Fallback if query fails
+            $stats = [
+                'total' => 0,
+                'pending' => 0,
+                'successful' => 0,
+                'unsuccessful' => 0,
+                'revenue' => 0
+            ];
+        }
         ?>
         <div class="col-md-3 col-sm-6">
             <div class="stats-card">
@@ -566,119 +624,151 @@ $offset = ($page - 1) * $limit;
                     </thead>
                     <tbody>
                     <?php
-                    // Optimized query with JOIN for better performance
-                    $query = "SELECT o.*, 
-                              GROUP_CONCAT(CONCAT(p.name, ' (x', oi.quantity, ')') SEPARATOR ', ') as products
-                              FROM orders o
-                              LEFT JOIN order_item oi ON o.id = oi.order_id
-                              LEFT JOIN products p ON oi.product_id = p.id
+                    // Build the main query - FIXED VERSION
+                    $query = "SELECT o.id, o.customer_name, o.address, o.phone, o.total, 
+                              o.payment_proof, o.created_at, o.payment_method, o.payment_status
+                              FROM orders o 
                               WHERE 1=1";
+                    
                     $params = [];
                     $types = '';
 
+                    // Add search filter
                     if (!empty($search)) {
                         $query .= " AND o.customer_name LIKE ?";
                         $params[] = "%$search%";
                         $types .= 's';
                     }
 
+                    // Add status filter
                     if (!empty($statusFilter)) {
                         $query .= " AND o.payment_status = ?";
                         $params[] = $statusFilter;
                         $types .= 's';
                     }
 
+                    // Add method filter
                     if (!empty($methodFilter)) {
                         $query .= " AND o.payment_method = ?";
                         $params[] = $methodFilter;
                         $types .= 's';
                     }
 
-                    $query .= " GROUP BY o.id ORDER BY o.created_at DESC LIMIT ? OFFSET ?";
+                    // Add ordering and pagination
+                    $query .= " ORDER BY o.created_at DESC LIMIT ? OFFSET ?";
                     $params[] = $limit;
                     $params[] = $offset;
                     $types .= 'ii';
 
+                    // Prepare and execute the query
                     $stmt = $conn->prepare($query);
-                    if (!empty($params)) {
-                        $stmt->bind_param($types, ...$params);
-                    }
-                    $stmt->execute();
-                    $result = $stmt->get_result();
-
-                    if ($result->num_rows === 0) {
-                        echo "<tr><td colspan='11' class='text-center py-5 text-muted'>";
-                        echo "<i class='fas fa-inbox fa-3x mb-3 d-block'></i>";
-                        echo "<h5>No orders found</h5>";
-                        echo "<p>Try adjusting your search criteria or add new orders.</p>";
+                    
+                    // Check if prepare was successful
+                    if (!$stmt) {
+                        echo "<tr><td colspan='11' class='text-center py-5 text-danger'>";
+                        echo "<i class='fas fa-exclamation-triangle fa-3x mb-3 d-block'></i>";
+                        echo "<h5>Database Error</h5>";
+                        echo "<p>Prepare failed: " . htmlspecialchars($conn->error) . "</p>";
                         echo "</td></tr>";
-                    }
-
-                    while ($row = $result->fetch_assoc()) {
-                        $orderId = $row['id'];
-                        $modalId = "uploadModal$orderId";
-                        $editModalId = "editModal$orderId";
-                        $proofModalId = "proofModal$orderId";
-
-                        echo "<tr>";
-                        echo "<td><strong>#{$row['id']}</strong></td>";
-                        echo "<td>" . htmlspecialchars($row['customer_name']) . "</td>";
-                        echo "<td><small>" . htmlspecialchars($row['products'] ?: 'No products') . "</small></td>";
-                        echo "<td><small>" . htmlspecialchars(substr($row['address'], 0, 30)) . "...</small></td>";
-                        echo "<td>" . htmlspecialchars($row['phone']) . "</td>";
-                        echo "<td><strong>₱" . number_format($row['total'], 2) . "</strong></td>";
-
-                        // Payment proof with enhanced modal
-                        if (!empty($row['payment_proof'])) {
-                            echo "<td><button class='btn btn-sm btn-outline-primary' onclick='openProofModal({$orderId}, \"" . htmlspecialchars($row['payment_proof']) . "\")'>";
-                            echo "<i class='fas fa-eye me-1'></i>View</button></td>";
-                        } else {
-                            echo "<td><span class='text-muted'><i class='fas fa-times-circle me-1'></i>None</span></td>";
+                    } else {
+                        // Bind parameters if any exist
+                        if (!empty($params)) {
+                            $stmt->bind_param($types, ...$params);
                         }
-
-                        echo "<td>" . date("M j, Y", strtotime($row['created_at'])) . "</td>";
-                        echo "<td><span class='badge bg-info'>" . htmlspecialchars($row['payment_method']) . "</span></td>";
                         
-                        // Enhanced status badges
-                        $statusClass = [
-                            'Pending' => 'status-pending',
-                            'Successful' => 'status-successful',
-                            'Unsuccessful' => 'status-unsuccessful'
-                        ][$row['payment_status']] ?? 'status-pending';
-                        
-                        echo "<td><span class='status-badge $statusClass'>" . htmlspecialchars($row['payment_status']) . "</span></td>";
-
-                        // Enhanced action buttons with onclick handlers
-                        echo "<td><div class='action-buttons'>";
-                        if ($row['payment_status'] === 'Pending') {
-                            echo "<button class='btn btn-success-custom btn-custom btn-sm' onclick='openUploadModal({$orderId})'>";
-                            echo "<i class='fas fa-upload me-1'></i>Upload Proof</button>";
-                            echo "<form method='POST' onsubmit=\"return confirm('Mark this order as unsuccessful?');\" class='mb-0'>";
-                            echo "<input type='hidden' name='order_id' value='$orderId'>";
-                            echo "<button type='submit' name='mark_unsuccessful' class='btn btn-danger-custom btn-custom btn-sm'>";
-                            echo "<i class='fas fa-times me-1'></i>Mark Failed</button>";
-                            echo "</form>";
+                        // Execute the query
+                        if (!$stmt->execute()) {
+                            echo "<tr><td colspan='11' class='text-center py-5 text-danger'>";
+                            echo "<i class='fas fa-exclamation-triangle fa-3x mb-3 d-block'></i>";
+                            echo "<h5>Database Error</h5>";
+                            echo "<p>Execute failed: " . htmlspecialchars($stmt->error) . "</p>";
+                            echo "</td></tr>";
                         } else {
-                            echo "<button class='btn btn-warning-custom btn-custom btn-sm' onclick='openEditModal({$orderId}, \"{$row['payment_status']}\", \"{$row['payment_proof']}\")'>";
-                            echo "<i class='fas fa-edit me-1'></i>Edit Order</button>";
+                            $result = $stmt->get_result();
+                            
+                            // Check if get_result was successful
+                            if (!$result) {
+                                echo "<tr><td colspan='11' class='text-center py-5 text-danger'>";
+                                echo "<i class='fas fa-exclamation-triangle fa-3x mb-3 d-block'></i>";
+                                echo "<h5>Database Error</h5>";
+                                echo "<p>Get result failed: " . htmlspecialchars($stmt->error) . "</p>";
+                                echo "</td></tr>";
+                            } else {
+                                // Check if we have results
+                                if ($result->num_rows === 0) {
+                                    echo "<tr><td colspan='11' class='text-center py-5 text-muted'>";
+                                    echo "<i class='fas fa-inbox fa-3x mb-3 d-block'></i>";
+                                    echo "<h5>No orders found</h5>";
+                                    echo "<p>Try adjusting your search criteria or add new orders.</p>";
+                                    echo "</td></tr>";
+                                } else {
+                                    // Display the results
+                                    while ($row = $result->fetch_assoc()) {
+                                        $orderId = $row['id'];
+                                        $products = getOrderProducts($conn, $orderId);
+
+                                        echo "<tr>";
+                                        echo "<td><strong>#{$row['id']}</strong></td>";
+                                        echo "<td>" . htmlspecialchars($row['customer_name']) . "</td>";
+                                        echo "<td><small>" . htmlspecialchars($products) . "</small></td>";
+                                        echo "<td><small>" . htmlspecialchars(substr($row['address'], 0, 30)) . "...</small></td>";
+                                        echo "<td>" . htmlspecialchars($row['phone']) . "</td>";
+                                        echo "<td><strong>₱" . number_format($row['total'], 2) . "</strong></td>";
+
+                                        // Payment proof with enhanced modal
+                                        if (!empty($row['payment_proof'])) {
+                                            echo "<td><button class='btn btn-sm btn-outline-primary' onclick='openProofModal({$orderId}, \"" . htmlspecialchars($row['payment_proof']) . "\")'>";
+                                            echo "<i class='fas fa-eye me-1'></i>View</button></td>";
+                                        } else {
+                                            echo "<td><span class='text-muted'><i class='fas fa-times-circle me-1'></i>None</span></td>";
+                                        }
+
+                                        echo "<td>" . date("M j, Y", strtotime($row['created_at'])) . "</td>";
+                                        echo "<td><span class='badge bg-info'>" . htmlspecialchars($row['payment_method']) . "</span></td>";
+                                        
+                                        // Enhanced status badges
+                                        $statusClass = [
+                                            'Pending' => 'status-pending',
+                                            'Successful' => 'status-successful',
+                                            'Unsuccessful' => 'status-unsuccessful'
+                                        ][$row['payment_status']] ?? 'status-pending';
+                                        
+                                        echo "<td><span class='status-badge $statusClass'>" . htmlspecialchars($row['payment_status']) . "</span></td>";
+
+                                        // Enhanced action buttons with onclick handlers
+                                        echo "<td><div class='action-buttons'>";
+                                        if ($row['payment_status'] === 'Pending') {
+                                            echo "<button class='btn btn-success-custom btn-custom btn-sm' onclick='openUploadModal({$orderId})'>";
+                                            echo "<i class='fas fa-upload me-1'></i>Upload Proof</button>";
+                                            echo "<form method='POST' onsubmit=\"return confirm('Mark this order as unsuccessful?');\" class='mb-0'>";
+                                            echo "<input type='hidden' name='order_id' value='$orderId'>";
+                                            echo "<button type='submit' name='mark_unsuccessful' class='btn btn-danger-custom btn-custom btn-sm'>";
+                                            echo "<i class='fas fa-times me-1'></i>Mark Failed</button>";
+                                            echo "</form>";
+                                        } else {
+                                            echo "<button class='btn btn-warning-custom btn-custom btn-sm' onclick='openEditModal({$orderId}, \"{$row['payment_status']}\", \"{$row['payment_proof']}\")'>";
+                                            echo "<i class='fas fa-edit me-1'></i>Edit Order</button>";
+                                        }
+                                        echo "</div></td>";
+                                        echo "</tr>";
+                                    }
+                                }
+                            }
                         }
-                        echo "</div></td>";
-                        echo "</tr>";
                     }
                     ?>
                     </tbody>
                 </table>
             </div>
 
-
-
             <!-- Enhanced Pagination -->
             <?php
-            // Get total count for pagination
-            $countQuery = "SELECT COUNT(DISTINCT o.id) as total FROM orders o WHERE 1=1";
+            // Get total count for pagination - FIXED VERSION
+            $countQuery = "SELECT COUNT(o.id) as total FROM orders o WHERE 1=1";
             $countParams = [];
             $countTypes = '';
 
+            // Add the same filters to count query
             if (!empty($search)) {
                 $countQuery .= " AND o.customer_name LIKE ?";
                 $countParams[] = "%$search%";
@@ -697,13 +787,30 @@ $offset = ($page - 1) * $limit;
                 $countTypes .= 's';
             }
 
+            // Prepare and execute count query
             $countStmt = $conn->prepare($countQuery);
-            if (!empty($countParams)) {
-                $countStmt->bind_param($countTypes, ...$countParams);
+            $totalRecords = 0;
+            $totalPages = 0;
+            
+            // Check if prepare was successful
+            if ($countStmt) {
+                // Bind parameters if any exist
+                if (!empty($countParams)) {
+                    $countStmt->bind_param($countTypes, ...$countParams);
+                }
+                
+                // Execute the count query
+                if ($countStmt->execute()) {
+                    $countResult = $countStmt->get_result();
+                    
+                    // Check if get_result was successful
+                    if ($countResult) {
+                        $countRow = $countResult->fetch_assoc();
+                        $totalRecords = $countRow['total'];
+                        $totalPages = ceil($totalRecords / $limit);
+                    }
+                }
             }
-            $countStmt->execute();
-            $totalRecords = $countStmt->get_result()->fetch_assoc()['total'];
-            $totalPages = ceil($totalRecords / $limit);
 
             if ($totalPages > 1): ?>
                 <div class="d-flex justify-content-between align-items-center mt-4">
@@ -824,7 +931,7 @@ $offset = ($page - 1) * $limit;
         
         // Current proof display
         let proofDisplay = '';
-        if (currentProof && currentProof !== 'null') {
+        if (currentProof && currentProof !== 'null' && currentProof !== '') {
             proofDisplay = `
                 <div class="mb-3">
                     <label class="form-label fw-bold">Current Proof</label>
@@ -885,7 +992,7 @@ $offset = ($page - 1) * $limit;
         // Set body content
         modalBody.innerHTML = `
             <div class="text-center p-4">
-                <img src="../uploads/${proofFile}" class="img-fluid rounded shadow" style="max-height: 500px;">
+                <img src="../uploads/${proofFile}" class="img-fluid rounded shadow" style="max-height: 500px;" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y4ZjlmYSIvPjx0ZXh0IHg9IjEwMCIgeT0iMTAwIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzZjNzU3ZCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+SW1hZ2UgTm90IEZvdW5kPC90ZXh0Pjwvc3ZnPg=='; this.alt='Image not found';">
             </div>
         `;
         
@@ -947,9 +1054,6 @@ $offset = ($page - 1) * $limit;
         document.body.style.paddingRight = '';
         const existingBackdrops = document.querySelectorAll('.modal-backdrop');
         existingBackdrops.forEach(backdrop => backdrop.remove());
-
-        // Simple modal initialization - let Bootstrap handle it naturally
-        // No need to manually initialize modals, Bootstrap does this automatically
 
         // Auto-submit form on filter change
         const filterSelects = document.querySelectorAll('#filterForm select');

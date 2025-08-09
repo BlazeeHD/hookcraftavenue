@@ -4,27 +4,74 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 include('../includes/db.php');
 
+// Function to get table and id field from category name
+function getCategoryTableInfo($categoryName) {
+    $safeName = strtolower(preg_replace('/[^a-zA-Z0-9_]/', '_', $categoryName));
+    $tableName = $safeName . "_products";
+    $idField = $safeName . "_id";
+    return [$tableName, $idField];
+}
+
+// Function to get product by ID from any category table
+function getProductById($conn, $productId, $categoryId) {
+    // Get category name
+    $catQuery = $conn->prepare("SELECT name FROM categories WHERE id = ?");
+    $catQuery->bind_param("i", $categoryId);
+    $catQuery->execute();
+    $catResult = $catQuery->get_result();
+    
+    if ($catResult->num_rows === 0) {
+        return null;
+    }
+    
+    $catRow = $catResult->fetch_assoc();
+    $categoryName = $catRow['name'];
+    
+    list($tableName, $idField) = getCategoryTableInfo($categoryName);
+    
+    // Get product from the specific category table
+    $productQuery = $conn->prepare("SELECT * FROM `$tableName` WHERE `$idField` = ?");
+    $productQuery->bind_param("i", $productId);
+    $productQuery->execute();
+    $productResult = $productQuery->get_result();
+    
+    if ($productResult->num_rows === 0) {
+        return null;
+    }
+    
+    return $productResult->fetch_assoc();
+}
+
 // Handle Add to Cart (AJAX)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['product_id'])) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['product_id']) && isset($_POST['category_id'])) {
     $isLoggedIn = isset($_SESSION['user_id']);
     if (!$isLoggedIn) {
         echo "not_logged_in";
         exit;
     }
-    $pid = (int)$_POST['product_id'];
-    $stock_query = $conn->prepare("SELECT stock FROM products WHERE id = ?");
-    $stock_query->bind_param("i", $pid);
-    $stock_query->execute();
-    $stock_query->bind_result($productStock);
-    $stock_query->fetch();
-    $stock_query->close();
-    $cart_qty = $_SESSION['cart'][$pid] ?? 0;
+    
+    $productId = (int)$_POST['product_id'];
+    $categoryId = (int)$_POST['category_id'];
+    
+    // Get product details
+    $product = getProductById($conn, $productId, $categoryId);
+    
+    if (!$product) {
+        echo "product_not_found";
+        exit;
+    }
+    
+    $productStock = $product['stock'];
+    $cartKey = $categoryId . '_' . $productId; // Use category_productid as key
+    
+    $cart_qty = $_SESSION['cart'][$cartKey] ?? 0;
     if ($cart_qty < $productStock) {
-        $_SESSION['cart'][$pid] = $cart_qty + 1;
+        $_SESSION['cart'][$cartKey] = $cart_qty + 1;
     } else {
         echo "max";
         exit;
     }
+    
     $new_cart_count = 0;
     foreach ($_SESSION['cart'] as $qty) {
         $new_cart_count += $qty;
@@ -40,6 +87,15 @@ if (!isset($_SESSION['cart'])) {
 $cart_count = array_sum($_SESSION['cart']);
 $isLoggedIn = isset($_SESSION['user_id']);
 $userName = $_SESSION['user_name'] ?? '';
+
+// Load all categories
+$categories = [];
+$catQuery = $conn->query("SELECT id, name FROM categories ORDER BY name");
+if ($catQuery) {
+    while ($cat = $catQuery->fetch_assoc()) {
+        $categories[$cat['id']] = $cat['name'];
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -67,10 +123,61 @@ $userName = $_SESSION['user_name'] ?? '';
       color: #fff !important;
       transition: background 0.3s;
     }
+    .product-card {
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+    }
+    .product-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    .product-card img {
+      width: 100%;
+      height: 250px;
+      object-fit: cover;
+    }
+    .product-info {
+      padding: 15px;
+    }
+    .product-price {
+      color: #d63384;
+      font-weight: bold;
+      font-size: 1.2em;
+    }
+    .category-badge {
+      background: linear-gradient(45deg, #007bff, #6610f2);
+      color: white;
+      font-size: 0.8em;
+    }
+    .stock-badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 2;
+    }
+    .out-of-stock {
+      opacity: 0.6;
+      position: relative;
+    }
+    .out-of-stock::after {
+      content: "OUT OF STOCK";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(220, 53, 69, 0.9);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 5px;
+      font-weight: bold;
+      z-index: 3;
+    }
   </style>
 </head>
 <body>
-
 
 <!-- Navbar -->
 <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
@@ -91,8 +198,8 @@ $userName = $_SESSION['user_name'] ?? '';
     <div class="collapse navbar-collapse" id="navbarContent">
       <!-- Center links -->
       <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
-        <li class="nav-item"><a class="nav-link active" href="../index.php">Home</a></li>
-        <li class="nav-item"><a class="nav-link" href="shop.php">Shop</a></li>
+        <li class="nav-item"><a class="nav-link" href="../index.php">Home</a></li>
+        <li class="nav-item"><a class="nav-link active" href="shop.php">Shop</a></li>
         <li class="nav-item"><a class="nav-link" href="about.php">About</a></li>
         <li class="nav-item"><a class="nav-link" href="gallery.php">Gallery</a></li>
         <li class="nav-item"><a class="nav-link" href="#">Contact</a></li>
@@ -106,7 +213,6 @@ $userName = $_SESSION['user_name'] ?? '';
 
       <!-- Right icons -->
       <ul class="navbar-nav flex-row align-items-center">
-
         <!-- Cart -->
         <li class="nav-item me-3">
           <?php if ($isLoggedIn): ?>
@@ -125,16 +231,16 @@ $userName = $_SESSION['user_name'] ?? '';
         <?php if ($isLoggedIn): ?>
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle p-0 border-0 bg-transparent" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-              <img src="<?php echo $userProfilePic ?? 'asset/images/default-profile.png'; ?>" alt="Profile" width="35" height="35" class="rounded-circle" style="object-fit: cover;">
+              <img src="<?php echo $userProfilePic ?? '../asset/images/default-profile.png'; ?>" alt="Profile" width="35" height="35" class="rounded-circle" style="object-fit: cover;">
             </a>
             <ul class="dropdown-menu dropdown-menu-end mt-2 p-3 text-center" aria-labelledby="userDropdown" style="min-width: 220px;">
               <li class="mb-2">
-                <img src="<?php echo $userProfilePic ?? 'asset/images/default-profile.png'; ?>" alt="Profile" width="60" height="60" class="rounded-circle shadow" style="object-fit: cover;">
+                <img src="<?php echo $userProfilePic ?? '../asset/images/default-profile.png'; ?>" alt="Profile" width="60" height="60" class="rounded-circle shadow" style="object-fit: cover;">
               </li>
               <li class="fw-bold"><?php echo htmlspecialchars($userName); ?></li>
               <li><hr class="dropdown-divider"></li>
               <li><a class="dropdown-item" href="../pages/profile.php"><i class="bi bi-person-circle me-2"></i> Profile</a></li>
-              <li><a class="dropdown-item text-danger" href="pages/logout.php"><i class="bi bi-box-arrow-right me-2"></i> Logout</a></li>
+              <li><a class="dropdown-item text-danger" href="../pages/logout.php"><i class="bi bi-box-arrow-right me-2"></i> Logout</a></li>
             </ul>
           </li>
         <?php else: ?>
@@ -149,22 +255,28 @@ $userName = $_SESSION['user_name'] ?? '';
   </div>
 </nav>
 
-
 <!-- Product Grid -->
 <div class="container-fluid mt-4">
   <div class="row">
     <aside class="col-md-3 sidebar">
       <h2>Categories</h2>
       <ul class="list-group mb-4">
-        <li class="list-group-item"><a href="#" onclick="filterProducts('all')">All</a></li>
-        <li class="list-group-item"><a href="#" onclick="filterProducts('mini')">Fancy Mini Flower</a></li>
-        <li class="list-group-item"><a href="#" onclick="filterProducts('giant')">Giant Flower</a></li>
-        <li class="list-group-item"><a href="#" onclick="filterProducts('choco')">Chocolate Flower</a></li>
-        <li class="list-group-item"><a href="#" onclick="filterProducts('bouquet')">Flower Bouquet</a></li>
-        <li class="list-group-item"><a href="#" onclick="filterProducts('accessories')">Accessories</a></li>
+        <li class="list-group-item">
+          <a href="#" onclick="filterProducts('all')" class="text-decoration-none">
+            <i class="fas fa-th-large me-2"></i>All Products
+          </a>
+        </li>
+        <?php foreach ($categories as $catId => $catName): ?>
+        <li class="list-group-item">
+          <a href="#" onclick="filterProducts('<?= $catId ?>')" class="text-decoration-none">
+            <i class="fas fa-tag me-2"></i><?= htmlspecialchars($catName) ?>
+          </a>
+        </li>
+        <?php endforeach; ?>
       </ul>
+      
       <div class="filter-price">
-        <h3>Filter by Price</h3>
+        <h3><i class="fas fa-filter me-2"></i>Filter by Price</h3>
         <input type="range" class="form-range" min="20" max="1000" value="1000" id="priceRange">
         <div class="d-flex justify-content-between">
           <span>₱20</span>
@@ -174,45 +286,101 @@ $userName = $_SESSION['user_name'] ?? '';
     </aside>
 
     <section class="col-md-9">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Our Products</h2>
+        <div class="text-muted">
+          <span id="product-count">0</span> products found
+        </div>
+      </div>
+      
       <div class="row g-4" id="product-list">
         <?php
-        $query = "SELECT * FROM products";
-        $result = mysqli_query($conn, $query);
-        while ($row = mysqli_fetch_assoc($result)) {
-          $productName = $row['name'];
-          $productImage = $row['image'];
-          $productPrice = $row['price'];
-          $productCategory = $row['category'];
-          $productStock = $row['stock'];
-          $productDesc = $row['description'] ?? 'No description available.';
+        // Fetch all products from all category tables
+        $allProducts = [];
+        
+        foreach ($categories as $catId => $catName) {
+            list($tableName, $idField) = getCategoryTableInfo($catName);
+            
+            // Check if table exists and query it
+            $checkTable = $conn->query("SHOW TABLES LIKE '$tableName'");
+            if ($checkTable && $checkTable->num_rows > 0) {
+                $query = "SELECT *, '$catId' as category_id, '$catName' as category_name FROM `$tableName`";
+                $result = $conn->query($query);
+                
+                if ($result && $result->num_rows > 0) {
+                    while ($row = $result->fetch_assoc()) {
+                        $allProducts[] = $row;
+                    }
+                }
+            }
+        }
+        
+        // Display products
+        $productCount = 0;
+        foreach ($allProducts as $row) {
+            $productId = $row[$row['category_name'] === 'Satin' ? 'satin_id' : ($row['category_name'] === 'Fizzywire' ? 'fizzywire_id' : 'customize_id')];
+            $productName = $row['name'];
+            $productImage = $row['image'];
+            $productPrice = $row['price'];
+            $categoryId = $row['category_id'];
+            $categoryName = $row['category_name'];
+            $productStock = $row['stock'];
+            $productDesc = !empty($row['description']) ? $row['description'] : 'High-quality ' . $categoryName . ' product.';
+            
+            // Use full image path
+            $imagePath = !empty($productImage) ? '../asset/images/' . $productImage : '../asset/images/placeholder.jpg';
+            $productCount++;
         ?>
-        <div class="col-sm-6 col-md-4 product-item" data-category="<?= $productCategory ?>" data-name="<?= $productName ?>" data-price="<?= $productPrice ?>">
-          <div class="product-card position-relative">
-            <a href="#" 
-              class="open-product-modal"
-              data-bs-toggle="modal"
-              data-bs-target="#productModal"
-              data-id="<?= $row['id'] ?>"
-              data-name="<?= htmlspecialchars($productName) ?>"
-              data-image="<?= $productImage ?>"
-              data-price="<?= $productPrice ?>"
-              data-description="<?= htmlspecialchars($productDesc) ?>"
-              data-stock="<?= $productStock ?>">
-              <img src="<?= $productImage ?>" alt="<?= $productName ?>" class="img-fluid">
-            </a>
-            <!-- Price removed here -->
-            <div class="position-absolute top-0 end-0 m-2">
-              <span class="badge bg-secondary">Stock: <?= $productStock ?></span>
+        <div class="col-sm-6 col-md-4 col-lg-3 product-item" 
+             data-category="<?= $categoryId ?>" 
+             data-name="<?= strtolower($productName) ?>" 
+             data-price="<?= $productPrice ?>">
+          <div class="product-card <?= $productStock <= 0 ? 'out-of-stock' : '' ?>" 
+               data-bs-toggle="modal"
+               data-bs-target="#productModal"
+               data-id="<?= $productId ?>"
+               data-category-id="<?= $categoryId ?>"
+               data-name="<?= htmlspecialchars($productName) ?>"
+               data-image="<?= $imagePath ?>"
+               data-price="<?= $productPrice ?>"
+               data-description="<?= htmlspecialchars($productDesc) ?>"
+               data-stock="<?= $productStock ?>"
+               data-category-name="<?= htmlspecialchars($categoryName) ?>">
+            
+            <div class="stock-badge">
+              <?php if ($productStock > 0): ?>
+                <span class="badge bg-success">Stock: <?= $productStock ?></span>
+              <?php else: ?>
+                <span class="badge bg-danger">Out of Stock</span>
+              <?php endif; ?>
+            </div>
+            
+            <img src="<?= $imagePath ?>" alt="<?= htmlspecialchars($productName) ?>" class="img-fluid">
+            
+            <div class="product-info">
+              <h6 class="mb-2"><?= htmlspecialchars($productName) ?></h6>
+              <div class="d-flex justify-content-between align-items-center">
+                <span class="product-price">₱<?= number_format($productPrice, 2) ?></span>
+                <span class="badge category-badge"><?= htmlspecialchars($categoryName) ?></span>
+              </div>
             </div>
           </div>
         </div>
         <?php } ?>
+        
+        <?php if (empty($allProducts)): ?>
+        <div class="col-12 text-center py-5">
+          <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+          <h4 class="text-muted">No products available</h4>
+          <p class="text-muted">Please check back later or contact us for more information.</p>
+        </div>
+        <?php endif; ?>
       </div>
     </section>
   </div>
 </div>
 
-<!-- Modal -->
+<!-- Product Modal -->
 <div class="modal fade" id="productModal" tabindex="-1" aria-labelledby="productModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content">
@@ -222,13 +390,21 @@ $userName = $_SESSION['user_name'] ?? '';
       </div>
       <div class="modal-body row">
         <div class="col-md-6">
-          <img id="modalProductImage" src="" alt="" class="img-fluid w-100">
+          <img id="modalProductImage" src="" alt="" class="img-fluid w-100 rounded">
         </div>
         <div class="col-md-6">
-          <h4 class="text-danger">₱<span id="modalProductPrice"></span></h4>
-          <p id="modalProductDescription"></p>
-          <p><strong>Stock:</strong> <span id="modalProductStock"></span></p>
-          <button id="modalAddToCartBtn" class="btn btn-primary mt-2" data-id="">Add to Cart</button>
+          <div class="mb-3">
+            <span id="modalCategoryBadge" class="badge category-badge"></span>
+          </div>
+          <h4 class="text-danger mb-3">₱<span id="modalProductPrice"></span></h4>
+          <p id="modalProductDescription" class="mb-3"></p>
+          <div class="mb-3">
+            <strong>Stock Available: </strong>
+            <span id="modalProductStock" class="badge bg-info"></span>
+          </div>
+          <button id="modalAddToCartBtn" class="btn btn-primary btn-lg w-100" data-id="" data-category-id="">
+            <i class="fas fa-cart-plus me-2"></i>Add to Cart
+          </button>
         </div>
       </div>
     </div>
@@ -236,30 +412,53 @@ $userName = $_SESSION['user_name'] ?? '';
 </div>
 
 <!-- Notification -->
-<div id="cart-notify" style="display:none;position:fixed;top:80px;right:30px;z-index:9999;" class="alert alert-success shadow">Added to cart!</div>
+<div id="cart-notify" style="display:none;position:fixed;top:80px;right:30px;z-index:9999;" class="alert alert-success shadow-lg">
+  <i class="fas fa-check-circle me-2"></i>Added to cart!
+</div>
 
 <!-- Footer -->
-<footer class="footer mt-5 text-center">
-  <p>&copy; 2025 Hookcraft Avenue. All rights reserved.</p>
+<footer class="footer mt-5 bg-dark text-light py-4">
+  <div class="container text-center">
+    <p class="mb-0">&copy; 2025 Hookcraft Avenue. All rights reserved.</p>
+  </div>
 </footer>
 
 <?php include('../pages/login_modal.php'); ?>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
 <script>
-  function filterProducts(category) {
-    document.querySelectorAll('.product-item').forEach(item => {
-      item.style.display = (category === 'all' || item.dataset.category === category) ? 'block' : 'none';
-    });
+  // Update product count
+  function updateProductCount() {
+    const visibleProducts = document.querySelectorAll('.product-item[style=""], .product-item:not([style])').length;
+    document.getElementById('product-count').textContent = visibleProducts;
   }
 
+  // Filter products by category
+  function filterProducts(category) {
+    document.querySelectorAll('.product-item').forEach(item => {
+      const shouldShow = (category === 'all' || item.dataset.category === category);
+      item.style.display = shouldShow ? 'block' : 'none';
+    });
+    updateProductCount();
+    
+    // Update active category
+    document.querySelectorAll('.list-group-item a').forEach(link => {
+      link.classList.remove('fw-bold', 'text-primary');
+    });
+    event.target.classList.add('fw-bold', 'text-primary');
+  }
+
+  // Search functionality
   document.getElementById('searchInput').addEventListener('input', function () {
     const keyword = this.value.toLowerCase();
     document.querySelectorAll('.product-item').forEach(item => {
-      item.style.display = item.dataset.name.toLowerCase().includes(keyword) ? 'block' : 'none';
+      const shouldShow = item.dataset.name.includes(keyword);
+      item.style.display = shouldShow ? 'block' : 'none';
     });
+    updateProductCount();
   });
 
+  // Price filter
   const priceSlider = document.getElementById('priceRange');
   const maxPriceText = document.getElementById('maxPrice');
 
@@ -268,31 +467,56 @@ $userName = $_SESSION['user_name'] ?? '';
     maxPriceText.textContent = maxPrice;
     document.querySelectorAll('.product-item').forEach(item => {
       const itemPrice = parseFloat(item.dataset.price);
-      item.style.display = (itemPrice <= maxPrice) ? 'block' : 'none';
+      const shouldShow = (itemPrice <= maxPrice);
+      item.style.display = shouldShow ? 'block' : 'none';
     });
+    updateProductCount();
   });
 
-  // Modal data population
-  document.querySelectorAll('.open-product-modal').forEach(link => {
-    link.addEventListener('click', function () {
+  // Modal functionality
+  document.querySelectorAll('.product-card').forEach(card => {
+    card.addEventListener('click', function (e) {
+      // Don't open modal if product is out of stock
+      if (this.classList.contains('out-of-stock')) {
+        e.preventDefault();
+        return;
+      }
+      
       document.getElementById('productModalLabel').innerText = this.dataset.name;
       document.getElementById('modalProductImage').src = this.dataset.image;
       document.getElementById('modalProductPrice').innerText = parseFloat(this.dataset.price).toFixed(2);
       document.getElementById('modalProductDescription').innerText = this.dataset.description;
       document.getElementById('modalProductStock').innerText = this.dataset.stock;
+      document.getElementById('modalCategoryBadge').innerText = this.dataset.categoryName;
       document.getElementById('modalAddToCartBtn').setAttribute('data-id', this.dataset.id);
+      document.getElementById('modalAddToCartBtn').setAttribute('data-category-id', this.dataset.categoryId);
+      
+      // Disable add to cart button if out of stock
+      const addToCartBtn = document.getElementById('modalAddToCartBtn');
+      if (parseInt(this.dataset.stock) <= 0) {
+        addToCartBtn.disabled = true;
+        addToCartBtn.innerHTML = '<i class="fas fa-times me-2"></i>Out of Stock';
+        addToCartBtn.classList.remove('btn-primary');
+        addToCartBtn.classList.add('btn-secondary');
+      } else {
+        addToCartBtn.disabled = false;
+        addToCartBtn.innerHTML = '<i class="fas fa-cart-plus me-2"></i>Add to Cart';
+        addToCartBtn.classList.remove('btn-secondary');
+        addToCartBtn.classList.add('btn-primary');
+      }
     });
   });
 
-  // Modal Add to Cart
+  // Add to cart functionality
   document.getElementById('modalAddToCartBtn').addEventListener('click', function () {
     const productId = this.getAttribute('data-id');
+    const categoryId = this.getAttribute('data-category-id');
     const cartCount = document.getElementById('cart-count');
 
     fetch('shop.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: 'product_id=' + productId
+      body: `product_id=${productId}&category_id=${categoryId}`
     })
     .then(res => res.text())
     .then(data => {
@@ -301,23 +525,43 @@ $userName = $_SESSION['user_name'] ?? '';
         return;
       }
       if (data === "max") {
-        alert("You’ve reached the maximum stock for this product.");
+        alert("You've reached the maximum stock for this product.");
+        return;
+      }
+      if (data === "product_not_found") {
+        alert("Product not found.");
         return;
       }
 
+      // Show success notification
       document.getElementById('cart-notify').style.display = 'block';
       cartCount.innerText = data;
       cartCount.classList.add('cart-bounce');
+      
+      // Hide modal
+      bootstrap.Modal.getInstance(document.getElementById('productModal')).hide();
+      
       setTimeout(() => {
         document.getElementById('cart-notify').style.display = 'none';
         cartCount.classList.remove('cart-bounce');
-      }, 1000);
+      }, 2000);
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('An error occurred. Please try again.');
     });
   });
 
+  // Initialize
   window.addEventListener('DOMContentLoaded', () => {
+    updateProductCount();
     priceSlider.value = 1000;
     maxPriceText.textContent = '1000';
+  });
+  
+  // Search form prevent default
+  document.querySelector('form[role="search"]').addEventListener('submit', function(e) {
+    e.preventDefault();
   });
 </script>
 </body>

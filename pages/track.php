@@ -1,70 +1,57 @@
+<?php
+include '../includes/db.php';
+session_start();
+
+if (!isset($_SESSION['user_id'])) {
+    header("Location: /hookcraftavenue/index.php");
+    exit();
+}
+
+$user_id = (int)$_SESSION['user_id'];
+$sql = "SELECT name FROM users WHERE id = ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$result = $stmt->get_result();
+$user = $result->fetch_assoc();
+$user_name = $user ? htmlspecialchars($user['name']) : "Guest";
+
+$isLoggedIn = isset($_SESSION['user_id']);
+$userName = $user_name;
+$userProfilePic = $userProfilePic ?? '../asset/images/default-profile.png';
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Track Order</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <meta charset="UTF-8" />
+  <title>Pickup & Delivery</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="../asset/styles.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
+    body {
+      background-color: #f7ecec;
       font-family: 'Poppins', sans-serif;
     }
-
-    body {
-      background-color: #d3bebe;
-    }
-
-    .container {
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-    }
-
-    .topbar {
-      background-color: #f9c2d1;
-      padding: 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .topbar .logo {
-      font-size: 24px;
-      font-weight: 600;
-      color: #d9539f;
-    }
-
-    .topbar .top-icons i {
-      margin-left: 30px;
-      font-size: 18px;
-      cursor: pointer;
-      color: #555;
-    }
-
-    .main {
-      display: flex;
-      flex: 1;
-    }
-
     .sidebar {
-      width: 250px;
-      background-color: #fff;
-      padding: 20px;
-      text-align: center;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+      padding: 30px 20px;
+      min-height: 100vh;
     }
-
     .sidebar img {
       width: 100px;
       height: 100px;
       border-radius: 50%;
       object-fit: cover;
       margin-bottom: 10px;
+      cursor: pointer;
+      border: 3px solid #f9c2d1;
     }
-
-    .sidebar button {
+    .sidebar button, .sidebar a button {
       display: block;
       width: 100%;
       margin: 10px 0;
@@ -78,214 +65,167 @@
       padding-left: 20px;
       border-radius: 5px;
       transition: background-color 0.3s;
+      font-size: 16px;
+      text-decoration: none;
     }
-
-    .sidebar button:hover {
+    .sidebar button:hover, .sidebar a button:hover {
       background-color: #f199b6;
     }
-
     .content {
       flex: 1;
       background-color: #fff;
       padding: 30px;
     }
-
-    .order-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background-color: #f3f3f3;
-      padding: 20px;
-      border-radius: 8px;
-      margin-bottom: 20px;
+    .order-card {
+      border: 1px solid #ddd;
+      background: #fff;
     }
-
-    .order-header h2 {
-      font-size: 20px;
-      font-weight: 600;
-    }
-
-    .order-header .print-button {
-      padding: 10px 15px;
-      border: none;
-      background-color: #f17fb5;
-      color: white;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-
-    .status-bar {
-      display: flex;
-      justify-content: space-between;
-      margin: 20px 0;
-      text-align: center;
-    }
-
-    .status-step {
-      flex: 1;
-    }
-
-    .status-label {
-      display: inline-block;
-      padding: 10px 15px;
-      background-color: #f9c2d1;
-      border-radius: 25px;
+    .nav-tabs .nav-link {
+      color: #555;
       font-weight: 500;
-      margin-bottom: 5px;
     }
-
-    .status-time {
-      font-size: 12px;
-      color: #666;
-    }
-
-    .order-details {
-      background-color: #e4e4e4;
-      padding: 30px;
-      border-radius: 10px;
-      margin-top: 10px;
-    }
-
-    .item-row {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-    }
-
-    .item-row .item-box {
-      width: 50px;
-      height: 50px;
-      background-color: black;
-    }
-
-    .item-desc {
-      flex: 1;
-    }
-
-    .item-price {
+    .nav-tabs .nav-link.active {
+      color: #000;
       font-weight: 600;
-    }
-
-    .status-paid {
-      color: green;
-      font-weight: 600;
-    }
-
-    .info-label {
-      margin-bottom: 5px;
-      font-size: 14px;
-      color: #333;
+      border-color: #f9c2d1 #f9c2d1 #fff;
+      background-color: #fff;
     }
   </style>
 </head>
 <body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
   <div class="container">
-    <!-- Top Bar -->
-    <div class="topbar">
-      <div class="logo">🌸 HookcraftAvenue</div>
-      <div class="top-icons">
-        <i class="fa fa-house" onclick="goHome()"></i> Home
-        <i class="fa fa-sign-out-alt" onclick="logout()"></i> Logout
-      </div>
-    </div>
-
-    <!-- Main Content Area -->
-    <div class="main">
-      <!-- Sidebar -->
-      <div class="sidebar">
-        <img src="https://via.placeholder.com/100" alt="User">
-        
-        <a href="profile.php">
-          <button>
-            <i class="fa fa-user-circle"></i> My Account
-          </button>
-        </a>
-
-        <a href="/hookcraftavenue/pages/purchase_history.php">
-          <button>
-            <i class="fa fa-history"></i> Purchase History
-          </button>
-        </a>
-
-        <a href="/hookcraftavenue/pages/track.php">
-          <button>
-            <i class="fa fa-truck"></i> Track Order
-          </button>
-        </a>
-      </div>
-
-      <!-- Content Section -->
-      <div class="content">
-        <div class="order-header">
-          <div>
-            <h2>Order ID: #14324</h2>
-            <div class="info-label">Date: 07/24/2025</div>
-          </div>
-          <button class="print-button"><i class="fa fa-print"></i> Print Invoice</button>
-        </div>
-
-        <!-- Order Status -->
-        <div class="status-bar">
-          <div class="status-step">
-            <div class="status-label">Packed</div>
-            <div class="status-time">07/23/2025 - 10:15 AM</div>
-          </div>
-          <div class="status-step">
-            <div class="status-label">Picked</div>
-            <div class="status-time">07/23/2025 - 1:30 PM</div>
-          </div>
-          <div class="status-step">
-            <div class="status-label">Out for Delivery</div>
-            <div class="status-time">07/24/2025 - 8:00 AM</div>
-          </div>
-          <div class="status-step">
-            <div class="status-label">Delivered</div>
-            <div class="status-time">07/24/2025 - 1:20 PM</div>
-          </div>
-        </div>
-
-        <!-- Order Details -->
-        <div class="order-details">
-          <h3>Item Ordered</h3>
-          <div class="item-row">
-            <div class="item-box"></div>
-            <div class="item-desc">Black</div>
-            <div class="item-price">350</div>
-            <div class="status-paid">Paid</div>
-          </div>
-        </div>
-      </div>
+    <a class="navbar-brand fw-bold" href="../index.php">
+      <img src="../asset/images/logo.jpg" alt="Logo" width="35" height="35" class="rounded-circle me-2">
+      HookcraftAvenue
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent"
+      aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarContent">
+      <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
+        <li class="nav-item"><a class="nav-link active" href="../index.php">Home</a></li>
+        <li class="nav-item"><a class="nav-link" href="shop.php">Shop</a></li>
+        <li class="nav-item"><a class="nav-link" href="about.php">About</a></li>
+        <li class="nav-item"><a class="nav-link" href="gallery.php">Gallery</a></li>
+        <li class="nav-item"><a class="nav-link" href="#">Contact</a></li>
+      </ul>
+      <form class="d-flex me-3" role="search">
+        <input type="text" id="searchInput" class="form-control" placeholder="Search products..." style="max-width: 250px;">
+        <button class="btn btn-outline-secondary btn-sm" type="submit">Search</button>
+      </form>
+      <ul class="navbar-nav flex-row align-items-center">
+        <!-- Cart -->
+        <li class="nav-item me-3">
+          <?php if ($isLoggedIn): ?>
+            <a class="nav-link position-relative" href="../pages/cart.php">
+          <?php else: ?>
+            <a class="nav-link position-relative" href="#" data-bs-toggle="modal" data-bs-target="#loginModal">
+          <?php endif; ?>
+              <i class="bi bi-cart fs-5"></i>
+              <span id="cart-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                <?php echo isset($cart_count) ? $cart_count : 0; ?>
+              </span>
+            </a>
+        </li>
+        <!-- User -->
+        <?php if ($isLoggedIn): ?>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle p-0 border-0 bg-transparent" href="#" id="userDropdown" data-bs-toggle="dropdown">
+              <img src="<?php echo $userProfilePic; ?>" alt="Profile" width="35" height="35" class="rounded-circle" style="object-fit: cover;">
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end mt-2 p-3 text-center" aria-labelledby="userDropdown" style="min-width: 220px;">
+              <li class="mb-2">
+                <img src="<?php echo $userProfilePic; ?>" alt="Profile" width="60" height="60" class="rounded-circle shadow" style="object-fit: cover;">
+              </li>
+              <li class="fw-bold"><?php echo htmlspecialchars($userName); ?></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="../pages/profile.php"><i class="bi bi-person-circle me-2"></i> Profile</a></li>
+              <li><a class="dropdown-item text-danger" href="pages/logout.php"><i class="bi bi-box-arrow-right me-2"></i> Logout</a></li>
+            </ul>
+          </li>
+        <?php else: ?>
+          <li class="nav-item">
+            <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#loginModal">
+              <i class="bi bi-person fs-5"></i>
+            </a>
+          </li>
+        <?php endif; ?>
+      </ul>
     </div>
   </div>
+</nav>
 
-  <!-- JavaScript -->
-  <script>
-    function goHome() {
-      alert("Redirecting to Home...");
-      window.location.href = 'index.php'; // Redirect to the homepage (index.php)
-    }
+<div class="container-fluid mt-4">
+  <div class="row">
+    <!-- Sidebar -->
+    <div class="col-md-3">
+      <div class="sidebar text-center">
+        <img id="userImage" src="https://via.placeholder.com/100" alt="User Image" onclick="changeProfile()" title="Click to change profile picture" />
+        <a href="profile.php"><button><i class="fa fa-home"></i> My Account</button></a>
+        <a href="purchase_history.php"><button><i class="fa fa-history"></i> Purchase History</button></a>
+        <a href="track.php"><button><i class="fa fa-truck"></i> Track Order</button></a>
+      </div>
+    </div>
 
-    function logout() {
-      alert("Logging out...");
-      window.location.href = 'index.php'; // Redirect to the homepage or login page after logging out
-    }
+    <!-- Main Content -->
+    <div class="col-md-9 content">
+      <!-- Tabs -->
+      <ul class="nav nav-tabs mb-4">
+        <li class="nav-item"><a class="nav-link active" href="#">All</a></li>
+        <li class="nav-item"><a class="nav-link" href="#">Ready for Pickup</a></li>
+        <li class="nav-item"><a class="nav-link" href="#">Out for Delivery</a></li>
+        <li class="nav-item"><a class="nav-link" href="#">Delivered</a></li>
+        <li class="nav-item"><a class="nav-link" href="#">Cancelled</a></li>
+      </ul>
 
-    // Function to handle the profile image change
-    function changeProfile() {
-      document.getElementById('fileInput').click(); // Trigger the file input click
-    }
+      <?php
+      $sql = "SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC";
+      $stmt = $conn->prepare($sql);
+      $stmt->bind_param("i", $user_id);
+      $stmt->execute();
+      $result = $stmt->get_result();
 
-    // Update the profile image
-    function updateImage(event) {
-      const file = event.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          document.getElementById('userImage').src = e.target.result; // Update image source
-        };
-        reader.readAsDataURL(file);
-      }
-    }
-  </script>
+      while ($order = $result->fetch_assoc()):
+          $items_sql = "SELECT * FROM order_items WHERE order_id = ?";
+          $items_stmt = $conn->prepare($items_sql);
+          $items_stmt->bind_param("i", $order['id']);
+          $items_stmt->execute();
+          $items_result = $items_stmt->get_result();
+      ?>
+      <div class="order-card mb-4 p-3 rounded shadow-sm">
+        <div class="d-flex justify-content-between mb-2">
+          <span class="fw-bold">Order ID: #<?= htmlspecialchars($order['id']) ?></span>
+          <span class="text-muted"><?= htmlspecialchars(date("M d, Y", strtotime($order['created_at']))) ?></span>
+        </div>
+        <?php while ($item = $items_result->fetch_assoc()): ?>
+        <div class="d-flex align-items-center mb-2">
+          <img src="<?= htmlspecialchars($item['product_image']) ?>" alt="Product" class="me-3" style="width: 60px; height: 60px; object-fit: cover;">
+          <div class="flex-fill">
+            <div class="fw-semibold"><?= htmlspecialchars($item['product_name']) ?></div>
+            <small class="text-muted">Variation: <?= htmlspecialchars($item['variation']) ?></small>
+          </div>
+          <div class="fw-bold">₱<?= number_format($item['price'], 2) ?></div>
+        </div>
+        <?php endwhile; ?>
+        <div class="d-flex justify-content-between align-items-center mt-3 border-top pt-2">
+          <span class="fw-semibold">Order Total: ₱<?= number_format($order['total_amount'], 2) ?></span>
+          <div>
+            <a href="view_order.php?id=<?= $order['id'] ?>" class="btn btn-outline-secondary btn-sm">View Details</a>
+            <?php if ($order['status'] === 'Out for Delivery'): ?>
+              <a href="track_order.php?id=<?= $order['id'] ?>" class="btn btn-primary btn-sm">Track</a>
+            <?php endif; ?>
+          </div>
+        </div>
+      </div>
+      <?php endwhile; ?>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

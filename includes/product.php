@@ -2,51 +2,171 @@
 include __DIR__ . '/../includes/db.php';
 session_start();
 
-// Handle Add Product
+// Load all categories
+$categories = [];
+$catQuery = $conn->query("SELECT id, name FROM categories ORDER BY name");
+while ($cat = $catQuery->fetch_assoc()) {
+    $categories[$cat['id']] = $cat['name'];
+}
+
+// Function to get table and id field from category name
+function getCategoryTableInfo($categoryName) {
+    $safeName = strtolower(preg_replace('/[^a-zA-Z0-9_]/', '_', $categoryName));
+    $tableName = $safeName . "_products";
+    $idField = $safeName . "_id";
+    return [$tableName, $idField];
+}
+
+// Function to create category product table if missing (with description field)
+function createCategoryTableIfNotExists($conn, $tableName, $idField, $categoryId) {
+    $sql = "CREATE TABLE IF NOT EXISTS `$tableName` (
+        `$idField` INT AUTO_INCREMENT PRIMARY KEY,
+        `category_id` INT NOT NULL,
+        `name` VARCHAR(255) NOT NULL,
+        `price` DECIMAL(10,2) NOT NULL,
+        `image` VARCHAR(255) NOT NULL,
+        `stock` INT NOT NULL DEFAULT 0,
+        `description` TEXT DEFAULT NULL,
+        FOREIGN KEY (`category_id`) REFERENCES `categories`(`id`) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+    return $conn->query($sql);
+}
+
+/** ADD CATEGORY **/
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_category'])) {
+    $categoryName = trim($_POST['category_name']);
+    
+    if (!empty($categoryName)) {
+        // Check if category already exists
+        $checkStmt = $conn->prepare("SELECT id FROM categories WHERE name = ?");
+        $checkStmt->bind_param("s", $categoryName);
+        $checkStmt->execute();
+        $result = $checkStmt->get_result();
+        
+        if ($result->num_rows == 0) {
+            // Insert new category
+            $stmt = $conn->prepare("INSERT INTO categories (name) VALUES (?)");
+            $stmt->bind_param("s", $categoryName);
+            
+            if ($stmt->execute()) {
+                $newCategoryId = $conn->insert_id;
+                
+                // Create corresponding product table
+                list($tableName, $idField) = getCategoryTableInfo($categoryName);
+                createCategoryTableIfNotExists($conn, $tableName, $idField, $newCategoryId);
+                
+                $_SESSION['success'] = "Category '$categoryName' added successfully!";
+            } else {
+                $_SESSION['error'] = "Failed to add category.";
+            }
+        } else {
+            $_SESSION['error'] = "Category '$categoryName' already exists.";
+        }
+    }
+    
+    header("Location: " . $_SERVER['PHP_SELF']);
+    exit;
+}
+
+/** DELETE CATEGORY **/
+if (isset($_GET['delete_category'])) {
+    $categoryId = intval($_GET['delete_category']);
+    
+    if (isset($categories[$categoryId]) && !in_array($categoryId, [1, 2, 3])) { // Protect default categories
+        $categoryName = $categories[$categoryId];
+        list($tableName, $idField) = getCategoryTableInfo($categoryName);
+        
+        // Drop the product table first
+        $conn->query("DROP TABLE IF EXISTS `$tableName`");
+        
+        // Delete the category
+        $stmt = $conn->prepare("DELETE FROM categories WHERE id = ?");
+        $stmt->bind_param("i", $categoryId);
+        $stmt->execute();
+        
+        $_SESSION['success'] = "Category '$categoryName' deleted successfully!";
+    } else {
+        $_SESSION['error'] = "Cannot delete this category.";
+    }
+    
+    header("Location: " . $_SERVER['PHP_SELF']);
+    exit;
+}
+
+/** ADD PRODUCT **/
+/** ADD PRODUCT **/
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_product'])) {
     $name = trim($_POST['name']);
-    $category = trim($_POST['category']);
+    $categoryId = intval($_POST['category_id']);
     $price = floatval($_POST['price']);
     $stock = intval($_POST['stock']);
+    $description = trim($_POST['description']);
     $imageName = '';
 
-    // Use image from ../asset/images/
+    // Upload image
     if (!empty($_FILES['image']['name'])) {
-        $filename = basename($_FILES['image']['name']);
-        $imagePath = '../asset/images/' . $filename;
-
-        if (move_uploaded_file($_FILES['image']['tmp_name'], __DIR__ . '/' . $imagePath)) {
-            $imageName = $imagePath; // Save relative path to asset folder
+        $uploadDir = __DIR__ . '/../asset/images/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
+        }
+        
+        $filename = time() . "_" . basename($_FILES['image']['name']);
+        $imagePath = $uploadDir . $filename;
+        
+        if (move_uploaded_file($_FILES['image']['tmp_name'], $imagePath)) {
+            $imageName = $filename;
+        } else {
+            $_SESSION['error'] = "Failed to upload image.";
         }
     }
 
-    $stmt = $conn->prepare("INSERT INTO products (name, category, price, stock, image) VALUES (?, ?, ?, ?, ?)");
-    $stmt->bind_param("ssdis", $name, $category, $price, $stock, $imageName);
-    $stmt->execute();
+    if (isset($categories[$categoryId]) && !empty($name) && $price > 0) {
+        $categoryName = $categories[$categoryId];
+        list($tableName, $idField) = getCategoryTableInfo($categoryName);
+
+        // Create table if not exists
+        createCategoryTableIfNotExists($conn, $tableName, $idField, $categoryId);
+
+        $stmt = $conn->prepare("INSERT INTO `$tableName` (category_id, name, price, image, stock, description) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("isdsis", $categoryId, $name, $price, $imageName, $stock, $description);
+        
+        if ($stmt->execute()) {
+            $_SESSION['success'] = "Product added successfully!";
+        } else {
+            $_SESSION['error'] = "Failed to add product: " . $conn->error;
+        }
+    } else {
+        $_SESSION['error'] = "Please fill in all required fields correctly.";
+    }
 
     header("Location: " . $_SERVER['PHP_SELF']);
     exit;
 }
 
-// Handle Edit Product
+/** EDIT PRODUCT **/
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_product'])) {
     $id = intval($_POST['product_id']);
+    $categoryId = intval($_POST['category_id']);
     $name = trim($_POST['name']);
-    $category = trim($_POST['category']);
     $price = floatval($_POST['price']);
     $stock = intval($_POST['stock']);
+    $description = trim($_POST['description']);
 
     $imageSql = "";
-    $params = [$name, $category, $price, $stock];
-    $types = "ssdi";
+    $params = [$name, $price, $stock, $description];
+    $types = "sdis";
 
-    // Handle image update from ../asset/images/
     if (!empty($_FILES['image']['name'])) {
-        $filename = basename($_FILES['image']['name']);
-        $imagePath = '../asset/images/' . $filename;
-
-        if (move_uploaded_file($_FILES['image']['tmp_name'], __DIR__ . '/' . $imagePath)) {
-            $imageName = $imagePath; // Save relative path
+        $uploadDir = __DIR__ . '/../asset/images/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
+        }
+        
+        $filename = time() . "_" . basename($_FILES['image']['name']);
+        $imagePath = $uploadDir . $filename;
+        
+        if (move_uploaded_file($_FILES['image']['tmp_name'], $imagePath)) {
+            $imageName = $filename;
             $imageSql = ", image = ?";
             $params[] = $imageName;
             $types .= "s";
@@ -56,157 +176,89 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_product'])) {
     $params[] = $id;
     $types .= "i";
 
-    $query = "UPDATE products SET name = ?, category = ?, price = ?, stock = ? $imageSql WHERE id = ?";
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param($types, ...$params);
-    $stmt->execute();
+    if (isset($categories[$categoryId])) {
+        $categoryName = $categories[$categoryId];
+        list($tableName, $idField) = getCategoryTableInfo($categoryName);
+        createCategoryTableIfNotExists($conn, $tableName, $idField, $categoryId);
+
+        $query = "UPDATE `$tableName` SET name = ?, price = ?, stock = ?, description = ? $imageSql WHERE `$idField` = ?";
+        $stmt = $conn->prepare($query);
+        $stmt->bind_param($types, ...$params);
+        
+        if ($stmt->execute()) {
+            $_SESSION['success'] = "Product updated successfully!";
+        } else {
+            $_SESSION['error'] = "Failed to update product.";
+        }
+    }
 
     header("Location: " . $_SERVER['PHP_SELF']);
     exit;
 }
 
-// Handle Delete Product
-if (isset($_GET['delete'])) {
+/** DELETE PRODUCT **/
+if (isset($_GET['delete']) && isset($_GET['category_id'])) {
     $id = intval($_GET['delete']);
-    $stmt = $conn->prepare("DELETE FROM products WHERE id = ?");
-    $stmt->bind_param("i", $id);
-    $stmt->execute();
-
+    $categoryId = intval($_GET['category_id']);
+    
+    if (isset($categories[$categoryId])) {
+        $categoryName = $categories[$categoryId];
+        list($tableName, $idField) = getCategoryTableInfo($categoryName);
+        
+        // Get image name before deletion
+        $imageQuery = $conn->prepare("SELECT image FROM `$tableName` WHERE `$idField` = ?");
+        $imageQuery->bind_param("i", $id);
+        $imageQuery->execute();
+        $imageResult = $imageQuery->get_result();
+        $imageRow = $imageResult->fetch_assoc();
+        
+        $stmt = $conn->prepare("DELETE FROM `$tableName` WHERE `$idField` = ?");
+        $stmt->bind_param("i", $id);
+        
+        if ($stmt->execute()) {
+            // Delete image file if exists
+            if ($imageRow && !empty($imageRow['image'])) {
+                $imagePath = __DIR__ . '/../asset/images/' . $imageRow['image'];
+                if (file_exists($imagePath)) {
+                    unlink($imagePath);
+                }
+            }
+            $_SESSION['success'] = "Product deleted successfully!";
+        } else {
+            $_SESSION['error'] = "Failed to delete product.";
+        }
+    }
+    
     header("Location: " . $_SERVER['PHP_SELF']);
     exit;
 }
 
-// Fetch products
-$result = $conn->query("SELECT * FROM products ORDER BY id DESC");
+/** FETCH ALL PRODUCTS **/
+$productResults = [];
+$unionQueries = [];
+foreach ($categories as $catId => $catName) {
+    list($tableName, $idField) = getCategoryTableInfo($catName);
+    // Create table if not exists for safety
+    createCategoryTableIfNotExists($conn, $tableName, $idField, $catId);
+    $unionQueries[] = "
+        SELECT '$catId' AS category_id, '$catName' AS category_name, $idField AS id, name, price, stock, image, description
+        FROM `$tableName`
+    ";
+}
+if ($unionQueries) {
+    $sql = implode(" UNION ALL ", $unionQueries) . " ORDER BY category_id, id DESC";
+    $productResults = $conn->query($sql);
+}
 ?>
-
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Products - Hookcraft Avenue</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../asset/dashboard.css">
-    <style>
-        .main-content {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            min-height: 100vh;
-        }
-        
-        .product-card {
-            border: none;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            backdrop-filter: blur(10px);
-            background: rgba(255,255,255,0.95);
-        }
-        
-        .card-header-custom {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 15px 15px 0 0;
-            border: none;
-            color: white;
-            padding: 1.5rem;
-        }
-        
-        .table-modern {
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-        }
-        
-        .table-modern thead {
-            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-        }
-        
-        .table-modern tbody tr {
-            transition: all 0.3s ease;
-        }
-        
-        .table-modern tbody tr:hover {
-            background: rgba(102, 126, 234, 0.1);
-            transform: scale(1.02);
-        }
-        
-        .btn-modern {
-            border-radius: 8px;
-            padding: 0.5rem 1rem;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            border: none;
-        }
-        
-        .btn-modern:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        }
-        
-        .btn-add {
-            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-            color: white;
-        }
-        
-        .btn-edit {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-        }
-        
-        .btn-delete {
-            background: linear-gradient(135deg, #fc466b 0%, #3f5efb 100%);
-            color: white;
-        }
-        
-        .product-image {
-            border-radius: 8px;
-            object-fit: cover;
-            transition: transform 0.3s ease;
-        }
-        
-        .product-image:hover {
-            transform: scale(1.1);
-        }
-        
-        .modal-content {
-            border: none;
-            border-radius: 15px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
-        }
-        
-        .modal-header {
-            border-radius: 15px 15px 0 0;
-            border-bottom: 1px solid #eee;
-        }
-        
-        .form-control {
-            border-radius: 8px;
-            border: 2px solid #e9ecef;
-            transition: all 0.3s ease;
-        }
-        
-        .form-control:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-        }
-        
-        .badge-stock {
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            font-weight: 600;
-        }
-        
-        .stock-low { background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); }
-        .stock-medium { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); }
-        .stock-high { background: linear-gradient(135deg, #d299c2 0%, #fef9d7 100%); }
-        
-        .price-display {
-            font-weight: 700;
-            color: #2c3e50;
-            font-size: 1.1rem;
-        }
-    </style>
 </head>
 <body>
 
@@ -214,83 +266,154 @@ $result = $conn->query("SELECT * FROM products ORDER BY id DESC");
 <?php include __DIR__ . '/header.php'; ?>
 
 <div class="main-content p-4">
-    <div class="product-card card">
-        <div class="card-header-custom d-flex justify-content-between align-items-center">
-            <div>
-                <h4 class="mb-1"><i class="fas fa-box-open me-2"></i>Product Management</h4>
-                <small class="opacity-75">Manage your inventory with ease</small>
-            </div>
-            <button class="btn btn-add btn-modern" data-bs-toggle="modal" data-bs-target="#addModal">
-                <i class="fas fa-plus me-2"></i>Add Product
+    <!-- Display Messages -->
+    <?php if (isset($_SESSION['success'])): ?>
+        <div class="alert alert-success alert-dismissible fade show">
+            <?= htmlspecialchars($_SESSION['success']) ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <?php unset($_SESSION['success']); ?>
+    <?php endif; ?>
+
+    <?php if (isset($_SESSION['error'])): ?>
+        <div class="alert alert-danger alert-dismissible fade show">
+            <?= htmlspecialchars($_SESSION['error']) ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <?php unset($_SESSION['error']); ?>
+    <?php endif; ?>
+
+    <!-- Category Management -->
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white d-flex justify-content-between">
+            <h5 class="mb-0">Category Management</h5>
+            <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+                <i class="fas fa-plus"></i> Add Category
             </button>
         </div>
-        
+        <div class="card-body">
+            <div class="row">
+                <?php foreach ($categories as $catId => $catName): ?>
+                    <div class="col-md-3 mb-2">
+                        <div class="card">
+                            <div class="card-body p-2 d-flex justify-content-between align-items-center">
+                                <span class="badge bg-secondary"><?= htmlspecialchars($catName) ?></span>
+                                <?php if (!in_array($catId, [1, 2, 3])): // Don't allow deletion of default categories ?>
+                                    <a href="?delete_category=<?= $catId ?>" class="btn btn-outline-danger btn-sm" onclick="return confirm('Delete category \'<?= htmlspecialchars($catName) ?>\'? This will also delete all products in this category.')">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Management -->
+    <div class="card">
+        <div class="card-header bg-primary text-white d-flex justify-content-between">
+            <h4 class="mb-0">Product Management</h4>
+            <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#addModal">
+                <i class="fas fa-plus"></i> Add Product
+            </button>
+        </div>
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-modern table-hover align-middle text-center mb-0">
-                    <thead>
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-dark">
                         <tr>
-                            <th class="py-3">ID</th>
-                            <th class="py-3">Product</th>
-                            <th class="py-3">Category</th>
-                            <th class="py-3">Price</th>
-                            <th class="py-3">Stock</th>
-                            <th class="py-3">Image</th>
-                            <th class="py-3">Actions</th>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Category</th>
+                            <th>Price</th>
+                            <th>Stock</th>
+                            <th>Description</th>
+                            <th>Image</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                    <?php if ($result && $result->num_rows > 0): ?>
-                        <?php while ($row = $result->fetch_assoc()): ?>
+                    <?php if ($productResults && $productResults->num_rows > 0): ?>
+                        <?php while ($row = $productResults->fetch_assoc()): ?>
                             <tr>
-                                <td class="fw-bold"><?= $row['id'] ?></td>
-                                <td class="text-start">
-                                    <div class="fw-bold text-primary"><?= htmlspecialchars($row['name']) ?></div>
-                                </td>
+                                <td><?= $row['id'] ?></td>
+                                <td><?= htmlspecialchars($row['name']) ?></td>
+                                <td><span class="badge bg-secondary"><?= htmlspecialchars($row['category_name']) ?></span></td>
+                                <td>₱<?= number_format($row['price'], 2) ?></td>
+                                <td><?= $row['stock'] ?></td>
                                 <td>
-                                    <span class="badge bg-secondary rounded-pill"><?= htmlspecialchars($row['category']) ?></span>
-                                </td>
-                                <td class="price-display">₱<?= number_format($row['price'], 2) ?></td>
-                                <td>
-                                    <?php 
-                                    $stockClass = $row['stock'] < 10 ? 'stock-low' : ($row['stock'] < 50 ? 'stock-medium' : 'stock-high');
-                                    ?>
-                                    <span class="badge badge-stock <?= $stockClass ?>"><?= $row['stock'] ?></span>
-                                </td>
-                                <td>
-                                    <?php if ($row['image']): ?>
-                                        <img src="../uploads/<?= htmlspecialchars($row['image']) ?>" 
-                                             width="60" height="60" class="product-image" 
-                                             alt="Product Image">
+                                    <?php if (!empty($row['description'])): ?>
+                                        <span class="text-truncate d-inline-block" style="max-width: 200px;" title="<?= htmlspecialchars($row['description']) ?>">
+                                            <?= htmlspecialchars(substr($row['description'], 0, 50)) ?>...
+                                        </span>
                                     <?php else: ?>
-                                        <div class="text-muted">
-                                            <i class="fas fa-image fa-2x"></i>
-                                        </div>
+                                        <span class="text-muted">No description</span>
                                     <?php endif; ?>
                                 </td>
                                 <td>
-                                    <div class="d-flex justify-content-center gap-2">
-                                        <button class="btn btn-edit btn-modern btn-sm" 
-                                                data-bs-toggle="modal" 
-                                                data-bs-target="#editModal<?= $row['id'] ?>">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <a href="?delete=<?= $row['id'] ?>" 
-                                           class="btn btn-delete btn-modern btn-sm" 
-                                           onclick="return confirm('Are you sure you want to delete this product?')">
-                                            <i class="fas fa-trash"></i>
-                                        </a>
-                                    </div>
+                                    <?php if ($row['image']): ?>
+                                        <img src="../asset/images/<?= htmlspecialchars($row['image']) ?>" width="50" class="img-thumbnail">
+                                    <?php else: ?>
+                                        <i class="fas fa-image text-muted"></i>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <a href="#" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editModal<?= $row['category_id'] ?>_<?= $row['id'] ?>"><i class="fas fa-edit"></i></a>
+                                    <a href="?delete=<?= $row['id'] ?>&category_id=<?= $row['category_id'] ?>" class="btn btn-danger btn-sm" onclick="return confirm('Delete this product?')"><i class="fas fa-trash"></i></a>
                                 </td>
                             </tr>
+
+                            <!-- Edit Modal -->
+                            <div class="modal fade" id="editModal<?= $row['category_id'] ?>_<?= $row['id'] ?>">
+                                <div class="modal-dialog modal-lg">
+                                    <div class="modal-content">
+                                        <form method="POST" enctype="multipart/form-data">
+                                            <input type="hidden" name="edit_product" value="1">
+                                            <input type="hidden" name="product_id" value="<?= $row['id'] ?>">
+                                            <input type="hidden" name="category_id" value="<?= $row['category_id'] ?>">
+                                            <div class="modal-header bg-warning">
+                                                <h5>Edit Product</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Product Name</label>
+                                                    <input type="text" name="name" class="form-control" value="<?= htmlspecialchars($row['name']) ?>" required>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Price</label>
+                                                    <input type="number" step="0.01" name="price" class="form-control" value="<?= $row['price'] ?>" required>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Stock</label>
+                                                    <input type="number" name="stock" class="form-control" value="<?= $row['stock'] ?>" required>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Description</label>
+                                                    <textarea name="description" class="form-control" rows="4" placeholder="Enter product description"><?= htmlspecialchars($row['description']) ?></textarea>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Image</label>
+                                                    <input type="file" name="image" class="form-control" accept="image/*">
+                                                    <?php if ($row['image']): ?>
+                                                        <small class="text-muted">Current: <?= htmlspecialchars($row['image']) ?></small>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                <button type="submit" class="btn btn-primary">Save Changes</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+
                         <?php endwhile; ?>
                     <?php else: ?>
-                        <tr>
-                            <td colspan="7" class="py-5 text-muted">
-                                <i class="fas fa-box-open fa-3x mb-3 d-block"></i>
-                                No products found. Add your first product!
-                            </td>
-                        </tr>
+                        <tr><td colspan="8" class="text-center">No products found</td></tr>
                     <?php endif; ?>
                     </tbody>
                 </table>
@@ -299,137 +422,81 @@ $result = $conn->query("SELECT * FROM products ORDER BY id DESC");
     </div>
 </div>
 
-<!-- Add Product Modal -->
-<div class="modal fade" id="addModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
+<!-- Add Category Modal -->
+<div class="modal fade" id="addCategoryModal">
+    <div class="modal-dialog">
         <div class="modal-content">
-            <form method="POST" enctype="multipart/form-data">
-                <input type="hidden" name="add_product" value="1">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title">Add New Product</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            <form method="POST">
+                <input type="hidden" name="add_category" value="1">
+                <div class="modal-header bg-success text-white">
+                    <h5>Add Category</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <input type="text" name="name" class="form-control" required placeholder="Product Name">
-                    </div>
-                    <div class="mb-3">
-                        <input type="text" name="category" class="form-control" required placeholder="Category">
-                    </div>
-                    <div class="mb-3">
-                        <input type="number" step="0.01" name="price" class="form-control" required placeholder="Price (₱)">
-                    </div>
-                    <div class="mb-3">
-                        <input type="number" name="stock" class="form-control" required placeholder="Stock Quantity">
-                    </div>
-                    <div class="mb-3">
-                        <input type="file" name="image" class="form-control" accept="image/*" required>
+                        <label class="form-label">Category Name</label>
+                        <input type="text" name="category_name" class="form-control" placeholder="Enter category name" required>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Add Product</button>
+                    <button type="submit" class="btn btn-success">Add Category</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-<!-- Edit Product Modals -->
-<?php 
-if ($result) {
-    $result->data_seek(0); // Reset result pointer
-    while ($row = $result->fetch_assoc()): 
-?>
-<div class="modal fade" id="editModal<?= $row['id'] ?>" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
+<!-- Add Product Modal -->
+<div class="modal fade" id="addModal">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <form method="POST" enctype="multipart/form-data">
-                <input type="hidden" name="product_id" value="<?= $row['id'] ?>">
-                <input type="hidden" name="edit_product" value="1">
-                <div class="modal-header bg-warning text-dark">
-                    <h5 class="modal-title">Edit Product</h5>
+                <input type="hidden" name="add_product" value="1">
+                <div class="modal-header bg-primary text-white">
+                    <h5>Add Product</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Product Name</label>
-                        <input type="text" name="name" class="form-control" 
-                               value="<?= htmlspecialchars($row['name']) ?>" required>
+                        <input type="text" name="name" class="form-control" placeholder="Product Name" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Category</label>
-                        <input type="text" name="category" class="form-control" 
-                               value="<?= htmlspecialchars($row['category']) ?>" required>
+                        <select name="category_id" class="form-select" required>
+                            <option value="">Select Category</option>
+                            <?php foreach ($categories as $catId => $catName): ?>
+                                <option value="<?= $catId ?>"><?= htmlspecialchars($catName) ?></option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Price (₱)</label>
-                        <input type="number" step="0.01" name="price" class="form-control" 
-                               value="<?= $row['price'] ?>" required>
+                        <label class="form-label">Price</label>
+                        <input type="number" step="0.01" name="price" class="form-control" placeholder="0.00" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Stock Quantity</label>
-                        <input type="number" name="stock" class="form-control" 
-                               value="<?= $row['stock'] ?>" required>
+                        <label class="form-label">Stock</label>
+                        <input type="number" name="stock" class="form-control" placeholder="0" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Product Image</label>
+                        <label class="form-label">Description</label>
+                        <textarea name="description" class="form-control" rows="4" placeholder="Enter product description"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Image</label>
                         <input type="file" name="image" class="form-control" accept="image/*">
-                        <?php if ($row['image']): ?>
-                            <div class="mt-2">
-                                <small class="text-muted">Current image:</small><br>
-                                <img src="../uploads/<?= htmlspecialchars($row['image']) ?>" 
-                                     width="100" class="rounded">
-                            </div>
-                        <?php endif; ?>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Update Product</button>
+                    <button type="submit" class="btn btn-success">Add Product</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
-<?php endwhile; } ?>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-// Auto-hide alerts after 3 seconds
-document.addEventListener('DOMContentLoaded', function() {
-    const alerts = document.querySelectorAll('.alert');
-    alerts.forEach(function(alert) {
-        setTimeout(function() {
-            alert.style.transition = 'opacity 0.5s';
-            alert.style.opacity = '0';
-            setTimeout(function() {
-                alert.remove();
-            }, 500);
-        }, 3000);
-    });
-});
-
-// Form validation
-document.querySelectorAll('form').forEach(function(form) {
-    form.addEventListener('submit', function(e) {
-        const inputs = form.querySelectorAll('input[required]');
-        let isValid = true;
-        
-        inputs.forEach(function(input) {
-            if (!input.value.trim()) {
-                input.classList.add('is-invalid');
-                isValid = false;
-            } else {
-                input.classList.remove('is-invalid');
-            }
-        });
-        
-        if (!isValid) {
-            e.preventDefault();
-        }
-    });
-});
-</script>
 </body>
 </html>
