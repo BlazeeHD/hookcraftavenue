@@ -7,100 +7,264 @@ if (!isset($_SESSION['cart'])) {
     $_SESSION['cart'] = [];
 }
 
+// Handle ADD TO CART action
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
+    $product_id = (int)$_POST['product_id'];
+    $category_id = (int)$_POST['category_id'];
+    $quantity = (int)($_POST['quantity'] ?? 1);
+    
+    // Debug logging
+    error_log("Add to cart - Product ID: $product_id, Category ID: $category_id, Quantity: $quantity");
+    
+    if ($product_id > 0 && $category_id > 0 && $quantity > 0) {
+        // Verify product exists before adding
+        $product = getProductDetails($conn, $product_id, $category_id);
+        if ($product) {
+            // Create a unique key for cart items (category_id + product_id)
+            $cart_key = $category_id . '_' . $product_id;
+            
+            // Check if item already exists in cart
+            if (isset($_SESSION['cart'][$cart_key]) && is_array($_SESSION['cart'][$cart_key])) {
+                $_SESSION['cart'][$cart_key]['quantity'] += $quantity;
+                error_log("Updated existing cart item: $cart_key");
+            } else {
+                $_SESSION['cart'][$cart_key] = [
+                    'product_id' => $product_id,
+                    'category_id' => $category_id,
+                    'quantity' => $quantity
+                ];
+                error_log("Added new cart item: $cart_key");
+            }
+            
+            $_SESSION['success'] = "Product '{$product['name']}' added to cart successfully!";
+            error_log("Cart after adding: " . print_r($_SESSION['cart'], true));
+        } else {
+            $_SESSION['error'] = "Product not found.";
+            error_log("Product not found: Product ID $product_id, Category ID $category_id");
+        }
+    } else {
+        $_SESSION['error'] = "Invalid product or quantity.";
+        error_log("Invalid data: Product ID $product_id, Category ID $category_id, Quantity $quantity");
+    }
+    
+    // If AJAX request, return JSON
+    if (isset($_POST['ajax'])) {
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => isset($_SESSION['success']),
+            'message' => $_SESSION['success'] ?? $_SESSION['error'] ?? 'Unknown error'
+        ]);
+        exit;
+    }
+    
+    // Redirect to prevent form resubmission
+    header('Location: cart.php');
+    exit;
+}
+
+// Function to get table and id field from category name
+function getCategoryTableInfo($categoryName) {
+    $safeName = strtolower(preg_replace('/[^a-zA-Z0-9_]/', '_', $categoryName));
+    $tableName = $safeName . "_products";
+    $idField = $safeName . "_id";
+    return [$tableName, $idField];
+}
+
+// Function to get product details from appropriate table
+function getProductDetails($conn, $product_id, $category_id) {
+    try {
+        // Get category name first
+        $catQuery = $conn->prepare("SELECT name FROM categories WHERE id = ?");
+        if (!$catQuery) {
+            error_log("Failed to prepare category query");
+            return null;
+        }
+        
+        $catQuery->bind_param("i", $category_id);
+        $catQuery->execute();
+        $catResult = $catQuery->get_result();
+        
+        if ($catRow = $catResult->fetch_assoc()) {
+            $categoryName = $catRow['name'];
+            list($tableName, $idField) = getCategoryTableInfo($categoryName);
+            
+            error_log("Looking for product in table: $tableName, field: $idField, product_id: $product_id");
+            
+            // Build query string manually since we can't use prepared statements with dynamic table names
+            $tableName = mysqli_real_escape_string($conn, $tableName);
+            $idField = mysqli_real_escape_string($conn, $idField);
+            $product_id = (int)$product_id;
+            
+            $query = "SELECT $idField as id, name, price, stock, image, description FROM `$tableName` WHERE $idField = $product_id";
+            $result = mysqli_query($conn, $query);
+            
+            if (!$result) {
+                error_log("Query failed: " . mysqli_error($conn) . " Query: $query");
+                return null;
+            }
+            
+            $product = mysqli_fetch_assoc($result);
+            if ($product) {
+                error_log("Found product: " . print_r($product, true));
+            } else {
+                error_log("No product found with query: $query");
+            }
+            
+            return $product;
+        } else {
+            error_log("Category not found: $category_id");
+        }
+    } catch (Exception $e) {
+        error_log("Error in getProductDetails: " . $e->getMessage());
+    }
+    return null;
+}
+
 // Handle REMOVE action
 if (isset($_POST['remove_id'])) {
-    $product_id = $_POST['remove_id'];
-    unset($_SESSION['cart'][$product_id]);
+    $remove_key = $_POST['remove_id'];
+    if (isset($_SESSION['cart'][$remove_key])) {
+        unset($_SESSION['cart'][$remove_key]);
+        $_SESSION['success'] = "Item removed from cart.";
+    }
 }
 
 // Handle UPDATE action
 if (isset($_POST['update_id']) && isset($_POST['update_qty'])) {
-    $product_id = (int)$_POST['update_id'];
+    $update_key = $_POST['update_id'];
     $qty = (int)$_POST['update_qty'];
 
-    if ($qty > 0) {
-        $_SESSION['cart'][$product_id] = $qty;
-    } else {
-        unset($_SESSION['cart'][$product_id]);
+    if (isset($_SESSION['cart'][$update_key])) {
+        if ($qty > 0) {
+            $_SESSION['cart'][$update_key]['quantity'] = $qty;
+            $_SESSION['success'] = "Cart updated successfully.";
+        } else {
+            unset($_SESSION['cart'][$update_key]);
+            $_SESSION['success'] = "Item removed from cart.";
+        }
     }
 }
 
 // Sync to DB if logged in
 if (isset($_SESSION['user_id'])) {
     $user_id = (int)$_SESSION['user_id'];
+    error_log("Syncing cart to database for user: $user_id");
 
-    // Optional debug
-    // echo "Logged in as user ID: " . $user_id;
+    try {
+        // Check if a cart exists for the user
+        $cart_result = mysqli_query($conn, "SELECT id FROM cart WHERE user_id = $user_id");
 
-    // Check if a cart exists for the user
-    $cart_result = mysqli_query($conn, "SELECT id FROM cart WHERE user_id = $user_id");
-
-    if (!$cart_result) {
-        die("Error retrieving cart: " . mysqli_error($conn));
-    }
-
-    if ($cart_row = mysqli_fetch_assoc($cart_result)) {
-        $cart_id = $cart_row['id'];
-        // Update created_at on access
-        mysqli_query($conn, "UPDATE cart SET created_at = NOW() WHERE id = $cart_id");
-    } else {
-        // Insert new cart with current timestamp
-        $insert_cart_sql = "INSERT INTO cart (user_id, created_at) VALUES (?, NOW())";
-        $stmt = mysqli_prepare($conn, $insert_cart_sql);
-
-        if (!$stmt) {
-            die("Prepare failed: " . mysqli_error($conn));
+        if (!$cart_result) {
+            throw new Exception("Error retrieving cart: " . mysqli_error($conn));
         }
 
-        mysqli_stmt_bind_param($stmt, "i", $user_id);
-        if (!mysqli_stmt_execute($stmt)) {
-            die("Insert failed: " . mysqli_error($conn));
+        if ($cart_row = mysqli_fetch_assoc($cart_result)) {
+            $cart_id = $cart_row['id'];
+            error_log("Found existing cart: $cart_id");
+            // Update created_at on access
+            mysqli_query($conn, "UPDATE cart SET created_at = NOW() WHERE id = $cart_id");
+        } else {
+            // Insert new cart with current timestamp
+            $insert_cart_sql = "INSERT INTO cart (user_id, created_at) VALUES (?, NOW())";
+            $stmt = mysqli_prepare($conn, $insert_cart_sql);
+
+            if (!$stmt) {
+                throw new Exception("Prepare failed: " . mysqli_error($conn));
+            }
+
+            mysqli_stmt_bind_param($stmt, "i", $user_id);
+            if (!mysqli_stmt_execute($stmt)) {
+                throw new Exception("Insert failed: " . mysqli_error($conn));
+            }
+
+            $cart_id = mysqli_insert_id($conn);
+            error_log("Created new cart: $cart_id");
+            mysqli_stmt_close($stmt);
         }
 
-        $cart_id = mysqli_insert_id($conn);
-        mysqli_stmt_close($stmt);
+        // Clear existing cart items for this cart
+        $delete_result = mysqli_query($conn, "DELETE FROM cart_item WHERE cart_id = $cart_id");
+        error_log("Cleared existing cart items, affected rows: " . mysqli_affected_rows($conn));
+
+        // Insert current items
+        foreach ($_SESSION['cart'] as $cart_key => $item) {
+            // Additional validation to ensure $item is an array
+            if (!is_array($item) || !isset($item['product_id'], $item['category_id'], $item['quantity'])) {
+                error_log("Skipping invalid cart item: " . print_r($item, true));
+                continue;
+            }
+            
+            $product_id = (int)$item['product_id'];
+            $category_id = (int)$item['category_id'];
+            $qty = (int)$item['quantity'];
+
+            $product = getProductDetails($conn, $product_id, $category_id);
+            if (!$product) {
+                error_log("Skipping cart item - product not found: Product ID $product_id, Category ID $category_id");
+                continue;
+            }
+
+            $price = $product['price'];
+            $subtotal = $price * $qty;
+
+            $stmt = mysqli_prepare($conn, "INSERT INTO cart_item (cart_id, category_id, product_id, quantity, price, subtotal) VALUES (?, ?, ?, ?, ?, ?)");
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, "iiiids", $cart_id, $category_id, $product_id, $qty, $price, $subtotal);
+                $execute_result = mysqli_stmt_execute($stmt);
+                if ($execute_result) {
+                    error_log("Successfully inserted cart item: Product ID $product_id, Category ID $category_id, Quantity $qty");
+                } else {
+                    error_log("Failed to insert cart item: " . mysqli_error($conn));
+                }
+                mysqli_stmt_close($stmt);
+            } else {
+                error_log("Failed to prepare cart item insert statement: " . mysqli_error($conn));
+            }
+        }
+    } catch (Exception $e) {
+        $_SESSION['cart_db_error'] = "Database error: " . $e->getMessage();
+        error_log("Cart DB Error: " . $e->getMessage());
     }
-
-    // Clear existing cart items for this cart
-    mysqli_query($conn, "DELETE FROM cart_item WHERE cart_id = $cart_id");
-
-    // Insert current items
-    foreach ($_SESSION['cart'] as $product_id => $qty) {
-        $product_id = (int)$product_id;
-        $qty = (int)$qty;
-
-        $res = mysqli_query($conn, "SELECT price FROM products WHERE id = $product_id");
-        if (!$res || mysqli_num_rows($res) === 0) continue;
-
-        $product = mysqli_fetch_assoc($res);
-        $price = $product['price'];
-        $subtotal = $price * $qty;
-
-        $stmt = mysqli_prepare($conn, "INSERT INTO cart_item (cart_id, product_id, quantity, price, subtotal) VALUES (?, ?, ?, ?, ?)");
-        mysqli_stmt_bind_param($stmt, "iiidd", $cart_id, $product_id, $qty, $price, $subtotal);
-        mysqli_stmt_execute($stmt);
-        mysqli_stmt_close($stmt);
-    }
+} else {
+    error_log("User not logged in, skipping database sync");
 }
 
 // Prepare display data
 $cart_items = [];
 $total = 0.0;
 
-if (!empty($_SESSION['cart'])) {
-    $ids = implode(',', array_map('intval', array_keys($_SESSION['cart'])));
-    $result = mysqli_query($conn, "SELECT id, name, price, stock, image FROM products WHERE id IN ($ids)");
-    $products = [];
-    while ($row = mysqli_fetch_assoc($result)) {
-        $products[$row['id']] = $row;
-    }
+// Debug: Show current cart contents
+error_log("Current cart contents: " . print_r($_SESSION['cart'], true));
 
-    foreach ($_SESSION['cart'] as $product_id => $qty) {
-        if (!isset($products[$product_id])) continue;
-        $product = $products[$product_id];
+if (!empty($_SESSION['cart']) && is_array($_SESSION['cart'])) {
+    foreach ($_SESSION['cart'] as $cart_key => $item) {
+        // Validate that $item is an array with required keys
+        if (!is_array($item)) {
+            error_log("Cart item is not an array: " . print_r($item, true));
+            continue;
+        }
+        
+        if (!isset($item['product_id'], $item['category_id'], $item['quantity'])) {
+            error_log("Cart item missing required keys: " . print_r($item, true));
+            continue;
+        }
+        
+        $product_id = (int)$item['product_id'];
+        $category_id = (int)$item['category_id'];
+        $qty = (int)$item['quantity'];
+
+        error_log("Processing cart item - Product ID: $product_id, Category ID: $category_id, Quantity: $qty");
+
+        $product = getProductDetails($conn, $product_id, $category_id);
+        if (!$product) {
+            error_log("Product not found: ID=$product_id, Category=$category_id");
+            continue;
+        }
+
         $subtotal = $product['price'] * $qty;
 
         $cart_items[] = [
+            'cart_key' => $cart_key,
             'id' => $product_id,
             'name' => $product['name'],
             'price' => $product['price'],
@@ -111,8 +275,11 @@ if (!empty($_SESSION['cart'])) {
         ];
 
         $total += $subtotal;
+        error_log("Added item to display: " . $product['name'] . " - Price: " . $product['price'] . " - Subtotal: $subtotal");
     }
 }
+
+error_log("Total cart items for display: " . count($cart_items) . " - Total amount: $total");
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -130,6 +297,31 @@ if (!empty($_SESSION['cart'])) {
 </nav>
 
 <div class="container mt-5">
+  <!-- Display Messages -->
+  <?php if (isset($_SESSION['success'])): ?>
+    <div class="alert alert-success alert-dismissible fade show">
+      <?= htmlspecialchars($_SESSION['success']) ?>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <?php unset($_SESSION['success']); ?>
+  <?php endif; ?>
+
+  <?php if (isset($_SESSION['error'])): ?>
+    <div class="alert alert-danger alert-dismissible fade show">
+      <?= htmlspecialchars($_SESSION['error']) ?>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <?php unset($_SESSION['error']); ?>
+  <?php endif; ?>
+
+  <?php if (isset($_SESSION['cart_db_error'])): ?>
+    <div class="alert alert-warning alert-dismissible fade show">
+      <?= htmlspecialchars($_SESSION['cart_db_error']) ?>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <?php unset($_SESSION['cart_db_error']); ?>
+  <?php endif; ?>
+
   <h2 class="mb-4">🛒 Your Shopping Cart</h2>
   <?php if (empty($cart_items)): ?>
     <div class="alert alert-info">Your cart is empty. <a href="shop.php">Continue shopping</a>.</div>
@@ -148,15 +340,17 @@ if (!empty($_SESSION['cart'])) {
         <?php foreach ($cart_items as $item): ?>
           <tr>
             <td>
-              <img src="<?= htmlspecialchars($item['image']) ?>" alt="<?= htmlspecialchars($item['name']) ?>" style="width: 50px; height: 50px; object-fit: cover;">
+              <?php if (!empty($item['image'])): ?>
+                <img src="../asset/images/<?= htmlspecialchars($item['image']) ?>" alt="<?= htmlspecialchars($item['name']) ?>" style="width: 50px; height: 50px; object-fit: cover;">
+              <?php endif; ?>
               <?= htmlspecialchars($item['name']) ?>
             </td>
             <td>₱<?= number_format($item['price'], 2) ?></td>
             <td>
               <form method="post" class="d-flex align-items-center">
-                <input type="hidden" name="update_id" value="<?= $item['id'] ?>">
+                <input type="hidden" name="update_id" value="<?= htmlspecialchars($item['cart_key']) ?>">
                 <select name="update_qty" class="form-select form-select-sm me-2" onchange="this.form.submit()" style="width:auto;">
-                  <?php for ($i = 1; $i <= $item['stock']; $i++): ?>
+                  <?php for ($i = 1; $i <= min($item['stock'], 99); $i++): ?>
                     <option value="<?= $i ?>" <?= $i == $item['quantity'] ? 'selected' : '' ?>><?= $i ?></option>
                   <?php endfor; ?>
                 </select>
@@ -164,7 +358,7 @@ if (!empty($_SESSION['cart'])) {
             </td>
             <td>₱<?= number_format($item['subtotal'], 2) ?></td>
             <td>
-              <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#confirmRemoveModal" data-remove-id="<?= $item['id'] ?>">Remove</button>
+              <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#confirmRemoveModal" data-remove-id="<?= htmlspecialchars($item['cart_key']) ?>">Remove</button>
             </td>
           </tr>
         <?php endforeach; ?>
@@ -176,6 +370,28 @@ if (!empty($_SESSION['cart'])) {
     </div>
     <div class="d-flex justify-content-end mt-3">
       <a href="checkout.php" class="btn btn-success">Proceed to Checkout</a>
+    </div>
+  <?php endif; ?>
+
+  <!-- Debug Section (Remove this in production) -->
+  <?php if (isset($_GET['debug'])): ?>
+    <div class="card mt-4">
+      <div class="card-header">
+        <h5>Debug Information</h5>
+      </div>
+      <div class="card-body">
+        <h6>Session Cart:</h6>
+        <pre><?= htmlspecialchars(print_r($_SESSION['cart'] ?? 'No cart data', true)) ?></pre>
+        
+        <h6>Cart Items Array:</h6>
+        <pre><?= htmlspecialchars(print_r($cart_items, true)) ?></pre>
+        
+        <h6>User Logged In:</h6>
+        <p><?= isset($_SESSION['user_id']) ? 'Yes (ID: ' . $_SESSION['user_id'] . ')' : 'No' ?></p>
+        
+        <h6>Database Connection:</h6>
+        <p><?= $conn ? 'Connected' : 'Not connected' ?></p>
+      </div>
     </div>
   <?php endif; ?>
 </div>

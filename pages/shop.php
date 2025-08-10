@@ -42,6 +42,11 @@ function getProductById($conn, $productId, $categoryId) {
     return $productResult->fetch_assoc();
 }
 
+// Initialize cart if not exists
+if (!isset($_SESSION['cart'])) {
+    $_SESSION['cart'] = [];
+}
+
 // Handle Add to Cart (AJAX)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['product_id']) && isset($_POST['category_id'])) {
     $isLoggedIn = isset($_SESSION['user_id']);
@@ -64,27 +69,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['product_id']) && isse
     $productStock = $product['stock'];
     $cartKey = $categoryId . '_' . $productId; // Use category_productid as key
     
-    $cart_qty = $_SESSION['cart'][$cartKey] ?? 0;
-    if ($cart_qty < $productStock) {
-        $_SESSION['cart'][$cartKey] = $cart_qty + 1;
+    // Get current quantity in cart for this item
+    $currentQty = 0;
+    if (isset($_SESSION['cart'][$cartKey]) && is_array($_SESSION['cart'][$cartKey])) {
+        $currentQty = $_SESSION['cart'][$cartKey]['quantity'];
+    }
+    
+    // Check if we can add more
+    if ($currentQty < $productStock) {
+        // Store cart item as array with proper structure
+        $_SESSION['cart'][$cartKey] = [
+            'product_id' => $productId,
+            'category_id' => $categoryId,
+            'quantity' => $currentQty + 1
+        ];
+        
+        // Debug logging
+        error_log("Added to cart: " . print_r($_SESSION['cart'][$cartKey], true));
     } else {
         echo "max";
         exit;
     }
     
+    // Calculate new cart count
     $new_cart_count = 0;
-    foreach ($_SESSION['cart'] as $qty) {
-        $new_cart_count += $qty;
+    foreach ($_SESSION['cart'] as $item) {
+        if (is_array($item) && isset($item['quantity'])) {
+            $new_cart_count += $item['quantity'];
+        }
     }
+    
+    error_log("New cart count: $new_cart_count");
     echo $new_cart_count;
     exit;
 }
 
-if (!isset($_SESSION['cart'])) {
-    $_SESSION['cart'] = [];
+// Calculate cart count for display
+$cart_count = 0;
+if (isset($_SESSION['cart']) && is_array($_SESSION['cart'])) {
+    foreach ($_SESSION['cart'] as $item) {
+        if (is_array($item) && isset($item['quantity'])) {
+            $cart_count += $item['quantity'];
+        }
+    }
 }
 
-$cart_count = array_sum($_SESSION['cart']);
 $isLoggedIn = isset($_SESSION['user_id']);
 $userName = $_SESSION['user_name'] ?? '';
 
@@ -222,7 +251,7 @@ if ($catQuery) {
           <?php endif; ?>
               <i class="bi bi-cart fs-5"></i>
               <span id="cart-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                <?php echo isset($cart_count) ? $cart_count : 0; ?>
+                <?php echo $cart_count; ?>
               </span>
             </a>
         </li>
@@ -520,6 +549,8 @@ if ($catQuery) {
     })
     .then(res => res.text())
     .then(data => {
+      console.log('Cart response:', data); // Debug log
+      
       if (data === "not_logged_in") {
         alert("Please log in to add products to your cart.");
         return;
