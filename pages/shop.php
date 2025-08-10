@@ -4,34 +4,10 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 include('../includes/db.php');
 
-// Function to get table and id field from category name
-function getCategoryTableInfo($categoryName) {
-    $safeName = strtolower(preg_replace('/[^a-zA-Z0-9_]/', '_', $categoryName));
-    $tableName = $safeName . "_products";
-    $idField = $safeName . "_id";
-    return [$tableName, $idField];
-}
-
-// Function to get product by ID from any category table
+// Function to get product by ID from products table
 function getProductById($conn, $productId, $categoryId) {
-    // Get category name
-    $catQuery = $conn->prepare("SELECT name FROM categories WHERE id = ?");
-    $catQuery->bind_param("i", $categoryId);
-    $catQuery->execute();
-    $catResult = $catQuery->get_result();
-    
-    if ($catResult->num_rows === 0) {
-        return null;
-    }
-    
-    $catRow = $catResult->fetch_assoc();
-    $categoryName = $catRow['name'];
-    
-    list($tableName, $idField) = getCategoryTableInfo($categoryName);
-    
-    // Get product from the specific category table
-    $productQuery = $conn->prepare("SELECT * FROM `$tableName` WHERE `$idField` = ?");
-    $productQuery->bind_param("i", $productId);
+    $productQuery = $conn->prepare("SELECT * FROM products WHERE id = ? AND category_id = ?");
+    $productQuery->bind_param("ii", $productId, $categoryId);
     $productQuery->execute();
     $productResult = $productQuery->get_result();
     
@@ -324,41 +300,28 @@ if ($catQuery) {
       
       <div class="row g-4" id="product-list">
         <?php
-        // Fetch all products from all category tables
-        $allProducts = [];
+        // Fetch all products from unified products table with category names
+        $query = "SELECT p.*, c.name as category_name 
+                  FROM products p 
+                  JOIN categories c ON p.category_id = c.id 
+                  ORDER BY p.name";
+        $result = $conn->query($query);
         
-        foreach ($categories as $catId => $catName) {
-            list($tableName, $idField) = getCategoryTableInfo($catName);
-            
-            // Check if table exists and query it
-            $checkTable = $conn->query("SHOW TABLES LIKE '$tableName'");
-            if ($checkTable && $checkTable->num_rows > 0) {
-                $query = "SELECT *, '$catId' as category_id, '$catName' as category_name FROM `$tableName`";
-                $result = $conn->query($query);
-                
-                if ($result && $result->num_rows > 0) {
-                    while ($row = $result->fetch_assoc()) {
-                        $allProducts[] = $row;
-                    }
-                }
-            }
-        }
-        
-        // Display products
         $productCount = 0;
-        foreach ($allProducts as $row) {
-            $productId = $row[$row['category_name'] === 'Satin' ? 'satin_id' : ($row['category_name'] === 'Fizzywire' ? 'fizzywire_id' : 'customize_id')];
-            $productName = $row['name'];
-            $productImage = $row['image'];
-            $productPrice = $row['price'];
-            $categoryId = $row['category_id'];
-            $categoryName = $row['category_name'];
-            $productStock = $row['stock'];
-            $productDesc = !empty($row['description']) ? $row['description'] : 'High-quality ' . $categoryName . ' product.';
-            
-            // Use full image path
-            $imagePath = !empty($productImage) ? '../asset/images/' . $productImage : '../asset/images/placeholder.jpg';
-            $productCount++;
+        if ($result && $result->num_rows > 0) {
+            while ($row = $result->fetch_assoc()) {
+                $productId = $row['id'];
+                $productName = $row['name'] ?? 'Unnamed Product';
+                $productImage = $row['image'] ?? '';
+                $productPrice = $row['price'] ?? 0;
+                $categoryId = $row['category_id'];
+                $categoryName = $row['category_name'];
+                $productStock = $row['stock'] ?? 0;
+                $productDesc = !empty($row['description']) ? $row['description'] : 'High-quality ' . $categoryName . ' product.';
+                
+                // Use full image path
+                $imagePath = !empty($productImage) ? '../asset/images/' . $productImage : '../asset/images/placeholder.jpg';
+                $productCount++;
         ?>
         <div class="col-sm-6 col-md-4 col-lg-3 product-item" 
              data-category="<?= $categoryId ?>" 
@@ -395,15 +358,16 @@ if ($catQuery) {
             </div>
           </div>
         </div>
-        <?php } ?>
-        
-        <?php if (empty($allProducts)): ?>
+        <?php 
+            }
+        } else {
+        ?>
         <div class="col-12 text-center py-5">
           <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
           <h4 class="text-muted">No products available</h4>
           <p class="text-muted">Please check back later or contact us for more information.</p>
         </div>
-        <?php endif; ?>
+        <?php } ?>
       </div>
     </section>
   </div>

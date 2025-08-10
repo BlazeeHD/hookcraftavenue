@@ -62,62 +62,62 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
     exit;
 }
 
-// Function to get table and id field from category name
-function getCategoryTableInfo($categoryName) {
-    $safeName = strtolower(preg_replace('/[^a-zA-Z0-9_]/', '_', $categoryName));
-    $tableName = $safeName . "_products";
-    $idField = $safeName . "_id";
-    return [$tableName, $idField];
-}
-
-// Function to get product details from appropriate table
+// Function to get product details from unified products table
 function getProductDetails($conn, $product_id, $category_id) {
     try {
-        // Get category name first
-        $catQuery = $conn->prepare("SELECT name FROM categories WHERE id = ?");
-        if (!$catQuery) {
-            error_log("Failed to prepare category query");
+        $productQuery = $conn->prepare("SELECT p.*, c.name as category_name FROM products p JOIN categories c ON p.category_id = c.id WHERE p.id = ? AND p.category_id = ?");
+        if (!$productQuery) {
+            error_log("Failed to prepare product query");
             return null;
         }
         
-        $catQuery->bind_param("i", $category_id);
-        $catQuery->execute();
-        $catResult = $catQuery->get_result();
+        $productQuery->bind_param("ii", $product_id, $category_id);
+        $productQuery->execute();
+        $productResult = $productQuery->get_result();
         
-        if ($catRow = $catResult->fetch_assoc()) {
-            $categoryName = $catRow['name'];
-            list($tableName, $idField) = getCategoryTableInfo($categoryName);
-            
-            error_log("Looking for product in table: $tableName, field: $idField, product_id: $product_id");
-            
-            // Build query string manually since we can't use prepared statements with dynamic table names
-            $tableName = mysqli_real_escape_string($conn, $tableName);
-            $idField = mysqli_real_escape_string($conn, $idField);
-            $product_id = (int)$product_id;
-            
-            $query = "SELECT $idField as id, name, price, stock, image, description FROM `$tableName` WHERE $idField = $product_id";
-            $result = mysqli_query($conn, $query);
-            
-            if (!$result) {
-                error_log("Query failed: " . mysqli_error($conn) . " Query: $query");
-                return null;
-            }
-            
-            $product = mysqli_fetch_assoc($result);
-            if ($product) {
-                error_log("Found product: " . print_r($product, true));
-            } else {
-                error_log("No product found with query: $query");
-            }
-            
+        if ($product = $productResult->fetch_assoc()) {
+            error_log("Found product: " . print_r($product, true));
             return $product;
         } else {
-            error_log("Category not found: $category_id");
+            error_log("No product found: Product ID $product_id, Category ID $category_id");
         }
     } catch (Exception $e) {
         error_log("Error in getProductDetails: " . $e->getMessage());
     }
     return null;
+}
+
+// Function to clean up cart - remove items that no longer exist
+function cleanupCart($conn) {
+    if (!isset($_SESSION['cart']) || !is_array($_SESSION['cart'])) {
+        return [];
+    }
+    
+    $removed_items = [];
+    $valid_cart = [];
+    
+    foreach ($_SESSION['cart'] as $cart_key => $item) {
+        if (!is_array($item) || !isset($item['product_id'], $item['category_id'], $item['quantity'])) {
+            $removed_items[] = "Invalid cart item structure";
+            continue;
+        }
+        
+        $product = getProductDetails($conn, $item['product_id'], $item['category_id']);
+        if ($product) {
+            $valid_cart[$cart_key] = $item;
+        } else {
+            $removed_items[] = "Product ID {$item['product_id']} not found and removed from cart.";
+        }
+    }
+    
+    $_SESSION['cart'] = $valid_cart;
+    return $removed_items;
+}
+
+// Clean up cart first
+$removed_items = cleanupCart($conn);
+if (!empty($removed_items)) {
+    $_SESSION['cart_updates'] = $removed_items;
 }
 
 // Handle REMOVE action
@@ -297,6 +297,20 @@ error_log("Total cart items for display: " . count($cart_items) . " - Total amou
 </nav>
 
 <div class="container mt-5">
+  <!-- Display Cart Updates -->
+  <?php if (isset($_SESSION['cart_updates']) && !empty($_SESSION['cart_updates'])): ?>
+    <div class="alert alert-warning alert-dismissible fade show">
+      <strong>Cart Updates:</strong>
+      <ul class="mb-0">
+        <?php foreach ($_SESSION['cart_updates'] as $update): ?>
+          <li><?= htmlspecialchars($update) ?></li>
+        <?php endforeach; ?>
+      </ul>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <?php unset($_SESSION['cart_updates']); ?>
+  <?php endif; ?>
+
   <!-- Display Messages -->
   <?php if (isset($_SESSION['success'])): ?>
     <div class="alert alert-success alert-dismissible fade show">
@@ -391,6 +405,14 @@ error_log("Total cart items for display: " . count($cart_items) . " - Total amou
         
         <h6>Database Connection:</h6>
         <p><?= $conn ? 'Connected' : 'Not connected' ?></p>
+        
+        <h6>Available Tables:</h6>
+        <?php
+        $tables = mysqli_query($conn, "SHOW TABLES");
+        while ($table = mysqli_fetch_array($tables)) {
+            echo "<p>" . $table[0] . "</p>";
+        }
+        ?>
       </div>
     </div>
   <?php endif; ?>

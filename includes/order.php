@@ -28,7 +28,7 @@ function generateSecureFilename($originalName) {
     return uniqid('payment_', true) . '.' . $extension;
 }
 
-// Function to get products for an order
+// Simplified function to get products for an order using the unified products table
 function getOrderProducts($conn, $orderId) {
     // Check if order_item table exists
     $checkTable = $conn->query("SHOW TABLES LIKE 'order_item'");
@@ -36,45 +36,35 @@ function getOrderProducts($conn, $orderId) {
         return "Order items table not found";
     }
     
-    $productQuery = "SELECT oi.quantity, oi.product_id
+    // Get order items with product information from unified products table
+    $productQuery = "SELECT oi.quantity, oi.product_id, p.name as product_name, c.name as category_name
                    FROM order_item oi 
+                   LEFT JOIN products p ON oi.product_id = p.id
+                   LEFT JOIN categories c ON oi.category_id = c.id
                    WHERE oi.order_id = ?";
     
     $productStmt = $conn->prepare($productQuery);
     if (!$productStmt) {
-        return "Error loading products";
+        return "Error loading products: " . $conn->error;
     }
     
     $productStmt->bind_param("i", $orderId);
     if (!$productStmt->execute()) {
-        return "Error loading products";
+        return "Error executing query: " . $productStmt->error;
     }
     
     $productResult = $productStmt->get_result();
     $products = [];
     
     while ($item = $productResult->fetch_assoc()) {
-        // Try to get product name from products table if it exists
-        $nameQuery = $conn->query("SHOW TABLES LIKE 'products'");
-        if ($nameQuery->num_rows > 0) {
-            $nameStmt = $conn->prepare("SELECT name FROM products WHERE id = ?");
-            if ($nameStmt) {
-                $nameStmt->bind_param("i", $item['product_id']);
-                $nameStmt->execute();
-                $nameResult = $nameStmt->get_result();
-                $nameRow = $nameResult->fetch_assoc();
-                $productName = $nameRow ? $nameRow['name'] : 'Product #' . $item['product_id'];
-            } else {
-                $productName = 'Product #' . $item['product_id'];
-            }
-        } else {
-            $productName = 'Product #' . $item['product_id'];
-        }
+        // Use the product name if available, otherwise use a fallback
+        $productName = !empty($item['product_name']) ? $item['product_name'] : 'Product #' . $item['product_id'];
+        $categoryName = !empty($item['category_name']) ? ' (' . $item['category_name'] . ')' : '';
         
-        $products[] = $productName . ' (x' . $item['quantity'] . ')';
+        $products[] = htmlspecialchars($productName) . $categoryName . ' (x' . $item['quantity'] . ')';
     }
     
-    return !empty($products) ? implode(', ', $products) : 'No products';
+    return !empty($products) ? implode(', ', $products) : 'No products found';
 }
 
 $message = '';
@@ -105,7 +95,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['order_id']) && isset(
                     $message = 'Payment proof uploaded successfully!';
                     $messageType = 'success';
                 } else {
-                    $message = 'Database update failed';
+                    $message = 'Database update failed: ' . $stmt->error;
                     $messageType = 'danger';
                     unlink($targetFile); // Clean up file on DB failure
                 }
@@ -131,6 +121,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['mark_unsuccessful']))
         if ($stmt->execute()) {
             $message = 'Order marked as unsuccessful';
             $messageType = 'warning';
+        } else {
+            $message = 'Error updating order: ' . $stmt->error;
+            $messageType = 'danger';
         }
     }
 }
@@ -166,11 +159,19 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['edit_status'])) {
         $types .= "i";
         
         $stmt = $conn->prepare($updateQuery);
-        $stmt->bind_param($types, ...$params);
-        
-        if ($stmt->execute()) {
-            $message = 'Order updated successfully!';
-            $messageType = 'success';
+        if ($stmt) {
+            $stmt->bind_param($types, ...$params);
+            
+            if ($stmt->execute()) {
+                $message = 'Order updated successfully!';
+                $messageType = 'success';
+            } else {
+                $message = 'Error updating order: ' . $stmt->error;
+                $messageType = 'danger';
+            }
+        } else {
+            $message = 'Error preparing query: ' . $conn->error;
+            $messageType = 'danger';
         }
     }
 }
@@ -506,6 +507,7 @@ $offset = ($page - 1) * $limit;
     <!-- Quick Stats -->
     <div class="row mb-4">
         <?php
+        // Updated stats query for new database structure
         $statsQuery = "SELECT 
             COUNT(*) as total,
             SUM(CASE WHEN payment_status = 'Pending' THEN 1 ELSE 0 END) as pending,
@@ -624,9 +626,13 @@ $offset = ($page - 1) * $limit;
                     </thead>
                     <tbody>
                     <?php
-                    // Build the main query - FIXED VERSION
-                    $query = "SELECT o.id, o.customer_name, o.address, o.phone, o.total, 
-                              o.payment_proof, o.created_at, o.payment_method, o.payment_status
+                    // Build the main query with proper NULL handling
+                    $query = "SELECT o.id, COALESCE(o.customer_name, 'Unknown Customer') as customer_name, 
+                              COALESCE(o.address, 'No address provided') as address, 
+                              COALESCE(o.phone, 'No phone provided') as phone, 
+                              o.total, o.payment_proof, o.created_at, 
+                              COALESCE(o.payment_method, 'Cash on Delivery') as payment_method, 
+                              COALESCE(o.payment_status, 'Pending') as payment_status
                               FROM orders o 
                               WHERE 1=1";
                     
@@ -710,7 +716,7 @@ $offset = ($page - 1) * $limit;
                                         echo "<tr>";
                                         echo "<td><strong>#{$row['id']}</strong></td>";
                                         echo "<td>" . htmlspecialchars($row['customer_name']) . "</td>";
-                                        echo "<td><small>" . htmlspecialchars($products) . "</small></td>";
+                                        echo "<td><small>" . $products . "</small></td>";
                                         echo "<td><small>" . htmlspecialchars(substr($row['address'], 0, 30)) . "...</small></td>";
                                         echo "<td>" . htmlspecialchars($row['phone']) . "</td>";
                                         echo "<td><strong>₱" . number_format($row['total'], 2) . "</strong></td>";
@@ -763,7 +769,7 @@ $offset = ($page - 1) * $limit;
 
             <!-- Enhanced Pagination -->
             <?php
-            // Get total count for pagination - FIXED VERSION
+            // Get total count for pagination
             $countQuery = "SELECT COUNT(o.id) as total FROM orders o WHERE 1=1";
             $countParams = [];
             $countTypes = '';
@@ -936,7 +942,7 @@ $offset = ($page - 1) * $limit;
                 <div class="mb-3">
                     <label class="form-label fw-bold">Current Proof</label>
                     <div class="text-center">
-                        <img src="../uploads/${currentProof}" class="img-thumbnail" style="max-height: 150px;">
+                        <img src="../uploads/${currentProof}" class="img-thumbnail" style="max-height: 150px;" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y4ZjlmYSIvPjx0ZXh0IHg9IjEwMCIgeT0iMTAwIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzZjNzU3ZCIgdGV4dC1hbmNob3I9Im1pZGRsZSI+SW1hZ2UgTm90IEZvdW5kPC90ZXh0Pjwvc3ZnPg=='; this.alt='Image not found';">
                     </div>
                 </div>
             `;

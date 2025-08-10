@@ -21,259 +21,252 @@ function getCategoryName($conn, $category_id) {
   return $category ? $category['name'] : 'Unknown';
 }
 
-// Function to get product from appropriate table
-function getProduct($conn, $category_id, $product_id) {
-  switch ($category_id) {
-    case 1: // Satin
-      $stmt = $conn->prepare("SELECT satin_id as product_id, name, price, image, stock, description FROM satin_products WHERE satin_id = ? AND category_id = ?");
-      break;
-    case 2: // Fizzywire  
-      $stmt = $conn->prepare("SELECT fizzywire_id as product_id, name, price, image, stock, description FROM fizzywire_products WHERE fizzywire_id = ? AND category_id = ?");
-      break;
-    case 3: // Customize
-      $stmt = $conn->prepare("SELECT customize_id as product_id, name, price, image, stock, description FROM customize_products WHERE customize_id = ? AND category_id = ?");
-      break;
-    default:
-      return null;
-  }
-  
-  $stmt->bind_param("ii", $product_id, $category_id);
-  $stmt->execute();
-  $result = $stmt->get_result();
-  return $result->fetch_assoc();
+// Function to get product from unified products table
+function getProductDetails($conn, $product_id, $category_id) {
+    try {
+        $productQuery = $conn->prepare("SELECT p.*, c.name as category_name FROM products p JOIN categories c ON p.category_id = c.id WHERE p.id = ? AND p.category_id = ?");
+        if (!$productQuery) {
+            error_log("Failed to prepare product query");
+            return null;
+        }
+        
+        $productQuery->bind_param("ii", $product_id, $category_id);
+        $productQuery->execute();
+        $productResult = $productQuery->get_result();
+        
+        if ($product = $productResult->fetch_assoc()) {
+            error_log("Found product: " . print_r($product, true));
+            return $product;
+        } else {
+            error_log("No product found: Product ID $product_id, Category ID $category_id");
+        }
+    } catch (Exception $e) {
+        error_log("Error in getProductDetails: " . $e->getMessage());
+    }
+    return null;
 }
 
-// Function to update stock
+// Function to update stock in unified products table
 function updateProductStock($conn, $category_id, $product_id, $quantity) {
-  switch ($category_id) {
-    case 1: // Satin
-      $stmt = $conn->prepare("UPDATE satin_products SET stock = stock - ? WHERE satin_id = ? AND stock >= ?");
-      break;
-    case 2: // Fizzywire
-      $stmt = $conn->prepare("UPDATE fizzywire_products SET stock = stock - ? WHERE fizzywire_id = ? AND stock >= ?");
-      break;
-    case 3: // Customize
-      $stmt = $conn->prepare("UPDATE customize_products SET stock = stock - ? WHERE customize_id = ? AND stock >= ?");
-      break;
-    default:
-      return false;
-  }
-  
-  $stmt->bind_param("iii", $quantity, $product_id, $quantity);
-  $stmt->execute();
-  return $stmt->affected_rows > 0;
+    try {
+        $stmt = $conn->prepare("UPDATE products SET stock = stock - ? WHERE id = ? AND category_id = ? AND stock >= ?");
+        if (!$stmt) {
+            return false;
+        }
+        
+        $stmt->bind_param("iiii", $quantity, $product_id, $category_id, $quantity);
+        $result = $stmt->execute();
+        
+        return $result && $stmt->affected_rows > 0;
+    } catch (Exception $e) {
+        error_log("Error updating stock: " . $e->getMessage());
+    }
+    return false;
 }
 
 // Clean and validate cart items
 if (!empty($_SESSION['cart'])) {
-  $cleaned_cart = [];
-  
-  foreach ($_SESSION['cart'] as $cart_key => $cart_data) {
-    // Parse cart key format: "category_id-product_id" or handle other formats
-    if (strpos($cart_key, '-') !== false) {
-      $parts = explode('-', $cart_key);
-      if (count($parts) == 2) {
-        $category_id = (int)$parts[0];
-        $product_id = (int)$parts[1];
-      } else {
-        continue; // Skip invalid format
-      }
-    } else {
-      // Handle simple numeric product IDs (legacy format)
-      $product_id = (int)$cart_key;
-      // Try to find the category by checking all product tables
-      $category_id = null;
-      
-      // Check satin_products
-      $stmt = $conn->prepare("SELECT category_id FROM satin_products WHERE satin_id = ?");
-      $stmt->bind_param("i", $product_id);
-      $stmt->execute();
-      $result = $stmt->get_result();
-      if ($row = $result->fetch_assoc()) {
-        $category_id = $row['category_id'];
-      } else {
-        // Check fizzywire_products
-        $stmt = $conn->prepare("SELECT category_id FROM fizzywire_products WHERE fizzywire_id = ?");
-        $stmt->bind_param("i", $product_id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        if ($row = $result->fetch_assoc()) {
-          $category_id = $row['category_id'];
+    $cleaned_cart = [];
+    
+    foreach ($_SESSION['cart'] as $cart_key => $cart_data) {
+        error_log("Processing cart item: $cart_key => " . print_r($cart_data, true));
+        
+        // Parse cart key format: "category_id_product_id"
+        if (strpos($cart_key, '_') !== false) {
+            $parts = explode('_', $cart_key);
+            if (count($parts) == 2) {
+                $category_id = (int)$parts[0];
+                $product_id = (int)$parts[1];
+            } else {
+                error_log("Invalid cart key format: $cart_key");
+                continue;
+            }
         } else {
-          // Check customize_products
-          $stmt = $conn->prepare("SELECT category_id FROM customize_products WHERE customize_id = ?");
-          $stmt->bind_param("i", $product_id);
-          $stmt->execute();
-          $result = $stmt->get_result();
-          if ($row = $result->fetch_assoc()) {
-            $category_id = $row['category_id'];
-          }
+            error_log("Cart key missing separator: $cart_key");
+            continue;
         }
-      }
-      
-      if (!$category_id) {
-        $cart_errors[] = "Product ID $product_id not found and removed from cart.";
-        continue;
-      }
+        
+        // Get quantity from cart data
+        if (is_array($cart_data)) {
+            $qty = (int)($cart_data['quantity'] ?? 1);
+        } else {
+            $qty = (int)$cart_data;
+        }
+        
+        if ($qty <= 0) {
+            $cart_errors[] = "Invalid quantity for cart item, removed.";
+            continue;
+        }
+        
+        // Get fresh product data from database
+        $product = getProductDetails($conn, $product_id, $category_id);
+        
+        if (!$product) {
+            $cart_errors[] = "Product no longer available and removed from cart.";
+            error_log("Product not found: Product ID $product_id, Category ID $category_id");
+            continue;
+        }
+        
+        // Check if product has sufficient stock
+        if ($product['stock'] <= 0) {
+            $cart_errors[] = htmlspecialchars($product['name']) . " is out of stock and removed from cart.";
+            continue;
+        }
+        
+        // Adjust quantity if exceeds available stock
+        if ($qty > $product['stock']) {
+            $qty = $product['stock'];
+            $cart_errors[] = htmlspecialchars($product['name']) . " quantity adjusted to available stock ($qty).";
+        }
+        
+        // Calculate subtotal
+        $subtotal = $qty * (float)$product['price'];
+        $total += $subtotal;
+        
+        // Add to cleaned cart items
+        $cart_items[] = [
+            'category_id' => $category_id,
+            'product_id' => $product_id,
+            'name' => $product['name'],
+            'image' => $product['image'],
+            'price' => (float)$product['price'],
+            'quantity' => $qty,
+            'subtotal' => $subtotal,
+            'stock' => $product['stock'],
+            'category_name' => $product['category_name']
+        ];
+        
+        // Update cleaned cart session
+        $cleaned_cart[$cart_key] = [
+            'product_id' => $product_id,
+            'category_id' => $category_id,
+            'quantity' => $qty
+        ];
+        
+        error_log("Added valid cart item: " . $product['name']);
     }
     
-    // Get quantity - handle both array and direct value formats
-    $qty = is_array($cart_data) ? (int)($cart_data['quantity'] ?? $cart_data['qty'] ?? 1) : (int)$cart_data;
-    if ($qty <= 0) {
-      $cart_errors[] = "Invalid quantity for product, item removed from cart.";
-      continue;
-    }
-    
-    // Get fresh product data from database
-    $product = getProduct($conn, $category_id, $product_id);
-    
-    if (!$product) {
-      $cart_errors[] = "Product no longer available and removed from cart.";
-      continue;
-    }
-    
-    // Check if product has sufficient stock
-    if ($product['stock'] <= 0) {
-      $cart_errors[] = htmlspecialchars($product['name']) . " is out of stock and removed from cart.";
-      continue;
-    }
-    
-    // Adjust quantity if exceeds available stock
-    if ($qty > $product['stock']) {
-      $qty = $product['stock'];
-      $cart_errors[] = htmlspecialchars($product['name']) . " quantity adjusted to available stock ($qty).";
-    }
-    
-    // Calculate subtotal
-    $subtotal = $qty * (float)$product['price'];
-    $total += $subtotal;
-    
-    // Add to cleaned cart items
-    $cart_items[] = [
-      'category_id' => $category_id,
-      'product_id' => $product_id,
-      'name' => $product['name'],
-      'image' => $product['image'],
-      'price' => (float)$product['price'],
-      'quantity' => $qty,
-      'subtotal' => $subtotal,
-      'stock' => $product['stock'],
-      'category_name' => getCategoryName($conn, $category_id)
-    ];
-    
-    // Update cleaned cart session
-    $cleaned_cart[$category_id . '-' . $product_id] = $qty;
-  }
-  
-  // Update session with cleaned cart
-  $_SESSION['cart'] = $cleaned_cart;
+    // Update session with cleaned cart
+    $_SESSION['cart'] = $cleaned_cart;
+    error_log("Cleaned cart: " . print_r($_SESSION['cart'], true));
 }
 
 // Handle checkout submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_checkout'])) {
-  $name = trim($_POST['name']);
-  $address = trim($_POST['address']);
-  $phone = trim($_POST['phone']);
-  $payment_method = $_POST['payment_method'] ?? 'GCash';
-  $status = 'Pending';
+    $name = trim($_POST['name']);
+    $address = trim($_POST['address']);
+    $phone = trim($_POST['phone']);
+    $payment_method = $_POST['payment_method'] ?? 'GCash';
+    $status = 'Pending';
 
-  // Validate inputs
-  if (empty($name) || empty($address) || empty($phone)) {
-    echo '<script>alert("Please fill out all required fields.");</script>';
-  } elseif (empty($cart_items)) {
-    echo '<script>alert("Your cart is empty.");</script>';
-  } else {
-    try {
-      $conn->begin_transaction();
+    // Validate inputs
+    if (empty($name) || empty($address) || empty($phone)) {
+        echo '<script>alert("Please fill out all required fields.");</script>';
+    } elseif (empty($cart_items)) {
+        echo '<script>alert("Your cart is empty.");</script>';
+    } else {
+        try {
+            $conn->begin_transaction();
 
-      // Re-validate cart items and stock before final processing
-      $final_total = 0;
-      $valid_items = [];
-      
-      foreach ($cart_items as $item) {
-        // Get fresh product data again to ensure accuracy
-        $fresh_product = getProduct($conn, $item['category_id'], $item['product_id']);
-        
-        if (!$fresh_product) {
-          throw new Exception("Product '" . $item['name'] . "' is no longer available.");
+            // Re-validate cart items and stock before final processing
+            $final_total = 0;
+            $valid_items = [];
+            
+            foreach ($cart_items as $item) {
+                // Get fresh product data again to ensure accuracy
+                $fresh_product = getProductDetails($conn, $item['product_id'], $item['category_id']);
+                
+                if (!$fresh_product) {
+                    throw new Exception("Product '" . $item['name'] . "' is no longer available.");
+                }
+                
+                if ($fresh_product['stock'] < $item['quantity']) {
+                    throw new Exception("Insufficient stock for '" . $item['name'] . "'. Available: " . $fresh_product['stock']);
+                }
+                
+                // Update item with fresh price (in case admin changed prices)
+                $item['price'] = (float)$fresh_product['price'];
+                $item['subtotal'] = $item['quantity'] * $item['price'];
+                $final_total += $item['subtotal'];
+                $valid_items[] = $item;
+            }
+
+            // Check if user is logged in
+            $user_id = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;
+            
+            // Check if orders table has customer fields
+            $columns_check = mysqli_query($conn, "SHOW COLUMNS FROM orders LIKE 'customer_name'");
+            $has_customer_fields = mysqli_num_rows($columns_check) > 0;
+            
+            if ($has_customer_fields) {
+                // Create order with customer details
+                $stmt = $conn->prepare("INSERT INTO orders (user_id, customer_name, address, phone, total, payment_status) VALUES (?, ?, ?, ?, ?, ?)");
+                $stmt->bind_param("isssds", $user_id, $name, $address, $phone, $final_total, $payment_status);
+            } else {
+                // Create order without customer details (basic table structure)
+                $stmt = $conn->prepare("INSERT INTO orders (user_id, total, payment_status) VALUES (?, ?, ?)");
+                $stmt->bind_param("ids", $user_id, $final_total, $payment_status);
+            }
+            
+            $stmt->execute();
+            $order_id = $stmt->insert_id;
+
+            // Insert order items and update stock
+            $insert_items = $conn->prepare("INSERT INTO order_item (order_id, category_id, product_id, quantity, price) VALUES (?, ?, ?, ?, ?)");
+
+            foreach ($valid_items as $item) {
+                // Insert order item
+                $insert_items->bind_param("iiiid", $order_id, $item['category_id'], $item['product_id'], $item['quantity'], $item['price']);
+                $insert_items->execute();
+
+                // Update stock
+                if (!updateProductStock($conn, $item['category_id'], $item['product_id'], $item['quantity'])) {
+                    throw new Exception("Failed to update stock for '" . $item['name'] . "'");
+                }
+            }
+
+            $conn->commit();
+
+            // Send email notification (optional)
+            try {
+                $formspree_url = "https://formspree.io/f/xjkvwyyq";
+                $email_body = http_build_query([
+                    'name' => $name,
+                    'address' => $address,
+                    'phone' => $phone,
+                    'total' => "₱" . number_format($final_total, 2),
+                    'order_id' => $order_id,
+                    'items' => implode(', ', array_map(function($item) {
+                        return $item['name'] . ' x' . $item['quantity'];
+                    }, $valid_items))
+                ]);
+
+                $ch = curl_init($formspree_url);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_POST, true);
+                curl_setopt($ch, CURLOPT_POSTFIELDS, $email_body);
+                curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/x-www-form-urlencoded']);
+                curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+                curl_exec($ch);
+                curl_close($ch);
+            } catch (Exception $e) {
+                // Email failed but order succeeded - log error but don't fail checkout
+                error_log("Email notification failed: " . $e->getMessage());
+            }
+
+            // Clear cart and redirect
+            $_SESSION['cart'] = [];
+            echo '<script>
+                alert("Order placed successfully! Order ID: ' . $order_id . '");
+                window.location="thankyou.php?order_id=' . $order_id . '&total=' . $final_total . '";
+            </script>';
+            exit();
+            
+        } catch (Exception $e) {
+            $conn->rollback();
+            echo '<script>alert("Checkout failed: ' . addslashes($e->getMessage()) . '");</script>';
         }
-        
-        if ($fresh_product['stock'] < $item['quantity']) {
-          throw new Exception("Insufficient stock for '" . $item['name'] . "'. Available: " . $fresh_product['stock']);
-        }
-        
-        // Update item with fresh price (in case admin changed prices)
-        $item['price'] = (float)$fresh_product['price'];
-        $item['subtotal'] = $item['quantity'] * $item['price'];
-        $final_total += $item['subtotal'];
-        $valid_items[] = $item;
-      }
-
-      // Check if user is logged in
-      $user_id = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;
-      
-      // Create order with final total
-      $stmt = $conn->prepare("INSERT INTO orders (user_id, total, status) VALUES (?, ?, ?)");
-      $stmt->bind_param("ids", $user_id, $final_total, $status);
-      $stmt->execute();
-      $order_id = $stmt->insert_id;
-
-      // Insert order items and update stock
-      $insert_items = $conn->prepare("INSERT INTO order_item (order_id, category_id, product_id, quantity, price) VALUES (?, ?, ?, ?, ?)");
-
-      foreach ($valid_items as $item) {
-        // Insert order item
-        $insert_items->bind_param("iiiid", $order_id, $item['category_id'], $item['product_id'], $item['quantity'], $item['price']);
-        $insert_items->execute();
-
-        // Update stock
-        if (!updateProductStock($conn, $item['category_id'], $item['product_id'], $item['quantity'])) {
-          throw new Exception("Failed to update stock for '" . $item['name'] . "'");
-        }
-      }
-
-      $conn->commit();
-
-      // Send email notification (optional)
-      try {
-        $formspree_url = "https://formspree.io/f/xjkvwyyq";
-        $email_body = http_build_query([
-          'name' => $name,
-          'address' => $address,
-          'phone' => $phone,
-          'total' => "₱" . number_format($final_total, 2),
-          'order_id' => $order_id,
-          'items' => implode(', ', array_map(function($item) {
-            return $item['name'] . ' x' . $item['quantity'];
-          }, $valid_items))
-        ]);
-
-        $ch = curl_init($formspree_url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $email_body);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/x-www-form-urlencoded']);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 10); // Add timeout
-        curl_exec($ch);
-        curl_close($ch);
-      } catch (Exception $e) {
-        // Email failed but order succeeded - log error but don't fail checkout
-        error_log("Email notification failed: " . $e->getMessage());
-      }
-
-      // Clear cart and redirect
-      $_SESSION['cart'] = [];
-      echo '<script>
-        alert("Order placed successfully! Order ID: ' . $order_id . '");
-        window.location="thankyou.php?order_id=' . $order_id . '&total=' . $final_total . '";
-      </script>';
-      exit();
-      
-    } catch (Exception $e) {
-      $conn->rollback();
-      echo '<script>alert("Checkout failed: ' . addslashes($e->getMessage()) . '");</script>';
     }
-  }
 }
 ?>
 
@@ -451,6 +444,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_checkout'])) 
     </div>
   </div>
   
+  <?php endif; ?>
+
+  <!-- Debug Section (Remove this in production) -->
+  <?php if (isset($_GET['debug'])): ?>
+    <div class="card mt-4">
+      <div class="card-header">
+        <h5>Debug Information</h5>
+      </div>
+      <div class="card-body">
+        <h6>Session Cart:</h6>
+        <pre><?= htmlspecialchars(print_r($_SESSION['cart'] ?? 'No cart data', true)) ?></pre>
+        
+        <h6>Cart Items Array:</h6>
+        <pre><?= htmlspecialchars(print_r($cart_items, true)) ?></pre>
+        
+        <h6>Total:</h6>
+        <p>₱<?= number_format($total, 2) ?></p>
+      </div>
+    </div>
   <?php endif; ?>
 </div>
 

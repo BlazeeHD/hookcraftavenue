@@ -2,85 +2,331 @@
 include __DIR__ . '/../includes/db.php';
 session_start();
 
+// Enhanced error handling and validation
+function validateFile($file, $maxSize = 5242880, $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']) {
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        return ['success' => false, 'message' => 'File upload error: ' . $file['error']];
+    }
+    
+    if ($file['size'] > $maxSize) {
+        return ['success' => false, 'message' => 'File too large. Max size: 5MB'];
+    }
+    
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    $mimeType = finfo_file($finfo, $file['tmp_name']);
+    finfo_close($finfo);
+    
+    if (!in_array($mimeType, $allowedTypes)) {
+        return ['success' => false, 'message' => 'Invalid file type. Only images allowed.'];
+    }
+    
+    return ['success' => true];
+}
+
+// Function to get table and id field from category name - copied from order.php
+function getCategoryTableInfo($categoryName) {
+    $safeName = strtolower(preg_replace('/[^a-zA-Z0-9_]/', '_', $categoryName));
+    $tableName = $safeName . "_products";
+    $idField = $safeName . "_id";
+    return [$tableName, $idField];
+}
+
+// Enhanced function to get product name from cart item - adapted from order.php logic
+function getProductName($conn, $productId, $categoryId = null) {
+    $productName = 'Product #' . $productId;
+    
+    // Try to get product name from category-specific table first
+    if (!empty($categoryId)) {
+        // Get category name first
+        $categoryQuery = $conn->prepare("SELECT name FROM categories WHERE id = ?");
+        if ($categoryQuery) {
+            $categoryQuery->bind_param("i", $categoryId);
+            $categoryQuery->execute();
+            $categoryResult = $categoryQuery->get_result();
+            
+            if ($categoryResult->num_rows > 0) {
+                $categoryRow = $categoryResult->fetch_assoc();
+                $categoryName = $categoryRow['name'];
+                
+                // Get table info for this category
+                list($tableName, $idField) = getCategoryTableInfo($categoryName);
+                
+                // Check if the category table exists
+                $checkCategoryTable = $conn->query("SHOW TABLES LIKE '$tableName'");
+                if ($checkCategoryTable && $checkCategoryTable->num_rows > 0) {
+                    // Try to get product name from category table
+                    $nameStmt = $conn->prepare("SELECT name FROM `$tableName` WHERE `$idField` = ?");
+                    if ($nameStmt) {
+                        $nameStmt->bind_param("i", $productId);
+                        $nameStmt->execute();
+                        $nameResult = $nameStmt->get_result();
+                        
+                        if ($nameResult->num_rows > 0) {
+                            $nameRow = $nameResult->fetch_assoc();
+                            $productName = $nameRow['name'];
+                            return $productName;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // Fallback: Try generic products table if category-specific lookup failed
+    if ($productName === 'Product #' . $productId) {
+        $genericQuery = $conn->query("SHOW TABLES LIKE 'products'");
+        if ($genericQuery && $genericQuery->num_rows > 0) {
+            $nameStmt = $conn->prepare("SELECT name FROM products WHERE id = ?");
+            if ($nameStmt) {
+                $nameStmt->bind_param("i", $productId);
+                $nameStmt->execute();
+                $nameResult = $nameStmt->get_result();
+                
+                if ($nameResult->num_rows > 0) {
+                    $nameRow = $nameResult->fetch_assoc();
+                    $productName = $nameRow['name'];
+                }
+            }
+        }
+    }
+    
+    return $productName;
+}
+
+// Function to get product price - similar to the name function
+function getProductPrice($conn, $productId, $categoryId = null) {
+    $productPrice = 0;
+    
+    // Try to get product price from category-specific table first
+    if (!empty($categoryId)) {
+        // Get category name first
+        $categoryQuery = $conn->prepare("SELECT name FROM categories WHERE id = ?");
+        if ($categoryQuery) {
+            $categoryQuery->bind_param("i", $categoryId);
+            $categoryQuery->execute();
+            $categoryResult = $categoryQuery->get_result();
+            
+            if ($categoryResult->num_rows > 0) {
+                $categoryRow = $categoryResult->fetch_assoc();
+                $categoryName = $categoryRow['name'];
+                
+                // Get table info for this category
+                list($tableName, $idField) = getCategoryTableInfo($categoryName);
+                
+                // Check if the category table exists
+                $checkCategoryTable = $conn->query("SHOW TABLES LIKE '$tableName'");
+                if ($checkCategoryTable && $checkCategoryTable->num_rows > 0) {
+                    // Try to get product price from category table
+                    $priceStmt = $conn->prepare("SELECT price FROM `$tableName` WHERE `$idField` = ?");
+                    if ($priceStmt) {
+                        $priceStmt->bind_param("i", $productId);
+                        $priceStmt->execute();
+                        $priceResult = $priceStmt->get_result();
+                        
+                        if ($priceResult->num_rows > 0) {
+                            $priceRow = $priceResult->fetch_assoc();
+                            $productPrice = $priceRow['price'];
+                            return $productPrice;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // Fallback: Try generic products table
+    $genericQuery = $conn->query("SHOW TABLES LIKE 'products'");
+    if ($genericQuery && $genericQuery->num_rows > 0) {
+        $priceStmt = $conn->prepare("SELECT price FROM products WHERE id = ?");
+        if ($priceStmt) {
+            $priceStmt->bind_param("i", $productId);
+            $priceStmt->execute();
+            $priceResult = $priceStmt->get_result();
+            
+            if ($priceResult->num_rows > 0) {
+                $priceRow = $priceResult->fetch_assoc();
+                $productPrice = $priceRow['price'];
+            }
+        }
+    }
+    
+    return $productPrice;
+}
+
+// Function to get category name
+function getCategoryName($conn, $categoryId) {
+    if (empty($categoryId)) return 'N/A';
+    
+    $categoryQuery = $conn->prepare("SELECT name FROM categories WHERE id = ?");
+    if ($categoryQuery) {
+        $categoryQuery->bind_param("i", $categoryId);
+        $categoryQuery->execute();
+        $categoryResult = $categoryQuery->get_result();
+        
+        if ($categoryResult->num_rows > 0) {
+            $categoryRow = $categoryResult->fetch_assoc();
+            return $categoryRow['name'];
+        }
+    }
+    
+    return 'N/A';
+}
+
+// Get actual table structure to make dynamic queries
+function getTableColumns($conn, $tableName) {
+    $result = $conn->query("SHOW COLUMNS FROM `$tableName`");
+    $columns = [];
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $columns[] = $row['Field'];
+        }
+    }
+    return $columns;
+}
+
+// Check if tables exist
+$tablesExist = [
+    'users' => $conn->query("SHOW TABLES LIKE 'users'")->num_rows > 0,
+    'products' => $conn->query("SHOW TABLES LIKE 'products'")->num_rows > 0,
+    'categories' => $conn->query("SHOW TABLES LIKE 'categories'")->num_rows > 0,
+    'cart' => $conn->query("SHOW TABLES LIKE 'cart'")->num_rows > 0,
+    'cart_item' => $conn->query("SHOW TABLES LIKE 'cart_item'")->num_rows > 0
+];
+
+// Get table structures if they exist
+$userColumns = $tablesExist['users'] ? getTableColumns($conn, 'users') : [];
+$productColumns = $tablesExist['products'] ? getTableColumns($conn, 'products') : [];
+$categoryColumns = $tablesExist['categories'] ? getTableColumns($conn, 'categories') : [];
+
+// Determine user name field
+$userNameField = 'id'; // default fallback
+if (in_array('name', $userColumns)) {
+    $userNameField = 'name';
+} elseif (in_array('username', $userColumns)) {
+    $userNameField = 'username';
+} elseif (in_array('full_name', $userColumns)) {
+    $userNameField = 'full_name';
+} elseif (in_array('first_name', $userColumns)) {
+    $userNameField = 'first_name';
+}
+
+// Determine user email field
+$userEmailField = null;
+if (in_array('email', $userColumns)) {
+    $userEmailField = 'email';
+} elseif (in_array('email_address', $userColumns)) {
+    $userEmailField = 'email_address';
+}
+
+$message = '';
+$messageType = '';
+
 // Add item to cart
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['add_to_cart'])) {
-  $userId = $_POST['user_id']; // Changed from customer_id to user_id
-  $productId = $_POST['product_id'];
-  $quantity = $_POST['quantity'];
-  
-  // First, get or create a cart for this user
-  $cartStmt = $conn->prepare("SELECT id FROM cart WHERE user_id = ? LIMIT 1");
-  $cartStmt->bind_param("i", $userId);
-  $cartStmt->execute();
-  $cartResult = $cartStmt->get_result();
-  
-  if ($cartResult->num_rows > 0) {
-    $cartId = $cartResult->fetch_assoc()['id'];
-  } else {
-    // Create new cart
-    $createCartStmt = $conn->prepare("INSERT INTO cart (user_id, created_at) VALUES (?, NOW())");
-    $createCartStmt->bind_param("i", $userId);
-    $createCartStmt->execute();
-    $cartId = $conn->insert_id;
-  }
-  
-  // Check if item already exists in cart
-  $checkStmt = $conn->prepare("SELECT id, quantity FROM cart_item WHERE cart_id=? AND product_id=?");
-  $checkStmt->bind_param("ii", $cartId, $productId);
-  $checkStmt->execute();
-  $existing = $checkStmt->get_result()->fetch_assoc();
-  
-  if ($existing) {
-    // Update quantity
-    $newQuantity = $existing['quantity'] + $quantity;
-    $updateStmt = $conn->prepare("UPDATE cart_item SET quantity=? WHERE id=?");
-    $updateStmt->bind_param("ii", $newQuantity, $existing['id']);
-    $updateStmt->execute();
-  } else {
-    // Insert new item
-    $insertStmt = $conn->prepare("INSERT INTO cart_item (cart_id, product_id, quantity) VALUES (?, ?, ?)");
-    $insertStmt->bind_param("iii", $cartId, $productId, $quantity);
-    $insertStmt->execute();
-  }
+    $userId = $_POST['user_id'];
+    $productId = $_POST['product_id'];
+    $quantity = $_POST['quantity'];
+    $categoryId = $_POST['category_id'] ?? null; // Get category ID if provided
+    
+    if (!$tablesExist['cart'] || !$tablesExist['cart_item']) {
+        $message = 'Cart tables do not exist. Please create the required tables first.';
+        $messageType = 'danger';
+    } else {
+        // First, get or create a cart for this user
+        $cartStmt = $conn->prepare("SELECT id FROM cart WHERE user_id = ? LIMIT 1");
+        $cartStmt->bind_param("i", $userId);
+        $cartStmt->execute();
+        $cartResult = $cartStmt->get_result();
+        
+        if ($cartResult->num_rows > 0) {
+            $cartId = $cartResult->fetch_assoc()['id'];
+        } else {
+            // Create new cart
+            $createCartStmt = $conn->prepare("INSERT INTO cart (user_id, created_at) VALUES (?, NOW())");
+            $createCartStmt->bind_param("i", $userId);
+            $createCartStmt->execute();
+            $cartId = $conn->insert_id;
+        }
+        
+        // Check if item already exists in cart
+        $checkStmt = $conn->prepare("SELECT id, quantity FROM cart_item WHERE cart_id=? AND product_id=?" . ($categoryId ? " AND category_id=?" : ""));
+        if ($categoryId) {
+            $checkStmt->bind_param("iii", $cartId, $productId, $categoryId);
+        } else {
+            $checkStmt->bind_param("ii", $cartId, $productId);
+        }
+        $checkStmt->execute();
+        $existing = $checkStmt->get_result()->fetch_assoc();
+        
+        if ($existing) {
+            // Update quantity
+            $newQuantity = $existing['quantity'] + $quantity;
+            $updateStmt = $conn->prepare("UPDATE cart_item SET quantity=? WHERE id=?");
+            $updateStmt->bind_param("ii", $newQuantity, $existing['id']);
+            $updateStmt->execute();
+        } else {
+            // Insert new item with category_id if provided
+            if ($categoryId) {
+                $insertStmt = $conn->prepare("INSERT INTO cart_item (cart_id, product_id, category_id, quantity) VALUES (?, ?, ?, ?)");
+                $insertStmt->bind_param("iiii", $cartId, $productId, $categoryId, $quantity);
+            } else {
+                $insertStmt = $conn->prepare("INSERT INTO cart_item (cart_id, product_id, quantity) VALUES (?, ?, ?)");
+                $insertStmt->bind_param("iii", $cartId, $productId, $quantity);
+            }
+            $insertStmt->execute();
+        }
+        
+        $message = 'Item added to cart successfully!';
+        $messageType = 'success';
+    }
 }
 
 // Update cart item quantity
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['update_quantity'])) {
-  $cartItemId = $_POST['cart_item_id'];
-  $newQuantity = $_POST['new_quantity'];
-  
-  if ($newQuantity > 0) {
-    $stmt = $conn->prepare("UPDATE cart_item SET quantity=? WHERE id=?");
-    $stmt->bind_param("ii", $newQuantity, $cartItemId);
-    $stmt->execute();
-  } else {
-    // Remove item if quantity is 0
-    $stmt = $conn->prepare("DELETE FROM cart_item WHERE id=?");
-    $stmt->bind_param("i", $cartItemId);
-    $stmt->execute();
-  }
+    $cartItemId = $_POST['cart_item_id'];
+    $newQuantity = $_POST['new_quantity'];
+    
+    if ($newQuantity > 0) {
+        $stmt = $conn->prepare("UPDATE cart_item SET quantity=? WHERE id=?");
+        $stmt->bind_param("ii", $newQuantity, $cartItemId);
+        $stmt->execute();
+    } else {
+        // Remove item if quantity is 0
+        $stmt = $conn->prepare("DELETE FROM cart_item WHERE id=?");
+        $stmt->bind_param("i", $cartItemId);
+        $stmt->execute();
+    }
+    
+    $message = 'Cart updated successfully!';
+    $messageType = 'success';
 }
 
 // Remove item from cart
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['remove_item'])) {
-  $cartItemId = $_POST['cart_item_id'];
-  $stmt = $conn->prepare("DELETE FROM cart_item WHERE id=?");
-  $stmt->bind_param("i", $cartItemId);
-  $stmt->execute();
+    $cartItemId = $_POST['cart_item_id'];
+    $stmt = $conn->prepare("DELETE FROM cart_item WHERE id=?");
+    $stmt->bind_param("i", $cartItemId);
+    $stmt->execute();
+    
+    $message = 'Item removed from cart!';
+    $messageType = 'success';
 }
 
 // Clear entire cart for a user
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['clear_cart'])) {
-  $userId = $_POST['user_id']; // Changed from customer_id to user_id
-  // Delete all cart items for this user's carts
-  $stmt = $conn->prepare("DELETE ci FROM cart_item ci INNER JOIN cart c ON ci.cart_id = c.id WHERE c.user_id = ?");
-  $stmt->bind_param("i", $userId);
-  $stmt->execute();
-  
-  // Optionally, also delete the empty cart records
-  $deleteCartStmt = $conn->prepare("DELETE FROM cart WHERE user_id = ?");
-  $deleteCartStmt->bind_param("i", $userId);
-  $deleteCartStmt->execute();
+    $userId = $_POST['user_id'];
+    // Delete all cart items for this user's carts
+    $stmt = $conn->prepare("DELETE ci FROM cart_item ci INNER JOIN cart c ON ci.cart_id = c.id WHERE c.user_id = ?");
+    $stmt->bind_param("i", $userId);
+    $stmt->execute();
+    
+    // Optionally, also delete the empty cart records
+    $deleteCartStmt = $conn->prepare("DELETE FROM cart WHERE user_id = ?");
+    $deleteCartStmt->bind_param("i", $userId);
+    $deleteCartStmt->execute();
+    
+    $message = 'Cart cleared successfully!';
+    $messageType = 'success';
 }
 
 $search = $_GET['search'] ?? '';
@@ -117,6 +363,20 @@ $statusFilter = $_GET['status'] ?? '';
     .quantity-input {
       width: 80px;
     }
+    .debug-info {
+      background: #f8f9fa;
+      padding: 10px;
+      border-radius: 5px;
+      font-size: 0.8em;
+      color: #666;
+    }
+    .table-error {
+      background: #fff3cd;
+      border: 1px solid #ffeaa7;
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -125,6 +385,38 @@ $statusFilter = $_GET['status'] ?? '';
 <?php include __DIR__ . '/header.php'; ?>
 
 <div class="main-content p-4">
+  <!-- Messages -->
+  <?php if ($message): ?>
+    <div class="alert alert-<?= $messageType ?> alert-dismissible fade show" role="alert">
+      <?= htmlspecialchars($message) ?>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <?php endif; ?>
+
+  <!-- Check if required tables exist -->
+  <?php if (!$tablesExist['cart'] || !$tablesExist['cart_item']): ?>
+    <div class="table-error mb-4">
+      <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+      <h4>Missing Cart Tables</h4>
+      <p>The required cart tables (cart, cart_item) do not exist in your database.</p>
+      <p>Please create these tables first before using the cart management system.</p>
+      <small class="text-muted">
+        Required tables: 
+        <?php if (!$tablesExist['cart']): ?><code>cart</code> <?php endif; ?>
+        <?php if (!$tablesExist['cart_item']): ?><code>cart_item</code> <?php endif; ?>
+      </small>
+    </div>
+  <?php else: ?>
+
+  <!-- Debug Information (remove in production) -->
+  <div class="debug-info mb-3">
+    <strong>Debug Info:</strong>
+    Tables found: <?= implode(', ', array_keys(array_filter($tablesExist))) ?> |
+    User fields: <?= implode(', ', $userColumns) ?> |
+    Product fields: <?= implode(', ', $productColumns) ?> |
+    Using user name field: <?= $userNameField ?>
+  </div>
+
   <!-- Cart Statistics -->
   <div class="row mb-4">
     <div class="col-md-12">
@@ -211,6 +503,7 @@ $statusFilter = $_GET['status'] ?? '';
             <tr>
               <th>Customer</th>
               <th>Product</th>
+              <th>Category</th>
               <th>Price (₱)</th>
               <th>Quantity</th>
               <th>Subtotal (₱)</th>
@@ -220,32 +513,41 @@ $statusFilter = $_GET['status'] ?? '';
           </thead>
           <tbody>
           <?php
-          // Build query based on filters - corrected for actual schema
+          // Build query for cart items - adapted from order.php logic
           $query = "
             SELECT 
               ci.id as cart_item_id,
               c.id as cart_id,
               c.user_id,
               ci.product_id,
+              ci.category_id,
               ci.quantity,
-              c.created_at,
-              u.name as customer_name,
-              u.email as customer_email,
-              p.name as product_name,
-              p.price as product_price,
-              (ci.quantity * p.price) as subtotal
+              c.created_at";
+          
+          // Add user fields if users table exists
+          if ($tablesExist['users'] && !empty($userColumns)) {
+              $query .= ", u.{$userNameField} as customer_name";
+              if ($userEmailField) {
+                  $query .= ", u.{$userEmailField} as customer_email";
+              }
+          }
+          
+          $query .= "
             FROM cart c
-            INNER JOIN cart_item ci ON c.id = ci.cart_id
-            LEFT JOIN users u ON c.user_id = u.id
-            LEFT JOIN products p ON ci.product_id = p.id
-            WHERE 1=1
-          ";
+            INNER JOIN cart_item ci ON c.id = ci.cart_id";
+          
+          // Join users table if it exists
+          if ($tablesExist['users']) {
+              $query .= " LEFT JOIN users u ON c.user_id = u.id";
+          }
+          
+          $query .= " WHERE 1=1";
           
           $params = [];
           $types = '';
           
-          if (!empty($search)) {
-            $query .= " AND u.name LIKE ?";
+          if (!empty($search) && $tablesExist['users']) {
+            $query .= " AND u.{$userNameField} LIKE ?";
             $params[] = "%$search%";
             $types .= 's';
           }
@@ -254,7 +556,7 @@ $statusFilter = $_GET['status'] ?? '';
             $query .= " AND ci.quantity > 0";
           }
           
-          $query .= " ORDER BY u.name, c.created_at DESC";
+          $query .= " ORDER BY u.{$userNameField}, c.created_at DESC";
           
           $stmt = $conn->prepare($query);
           if (!empty($params)) {
@@ -270,13 +572,20 @@ $statusFilter = $_GET['status'] ?? '';
           while ($row = $result->fetch_assoc()) {
             $cartItemId = $row['cart_item_id'];
             $userId = $row['user_id'];
-            $customerName = htmlspecialchars($row['customer_name']);
+            $customerName = isset($row['customer_name']) ? htmlspecialchars($row['customer_name']) : 'User #' . $userId;
+            
+            // Get product details using the order.php logic
+            $productName = getProductName($conn, $row['product_id'], $row['category_id']);
+            $productPrice = getProductPrice($conn, $row['product_id'], $row['category_id']);
+            $categoryName = getCategoryName($conn, $row['category_id']);
+            
+            $subtotal = $productPrice * $row['quantity'];
             
             // Group by customer
             if ($currentUser != $userId && $currentUser != '') {
               // Show customer total row
               echo "<tr class='table-info fw-bold'>
-                      <td colspan='4'>Customer Total</td>
+                      <td colspan='5'>Customer Total</td>
                       <td>₱" . number_format($customerTotal, 2) . "</td>
                       <td>$customerItemCount items</td>
                       <td>
@@ -288,7 +597,7 @@ $statusFilter = $_GET['status'] ?? '';
                         </form>
                       </td>
                     </tr>";
-              echo "<tr><td colspan='7'><hr></td></tr>";
+              echo "<tr><td colspan='8'><hr></td></tr>";
               $customerTotal = 0;
               $customerItemCount = 0;
             }
@@ -297,16 +606,19 @@ $statusFilter = $_GET['status'] ?? '';
               $currentUser = $userId;
             }
             
-            $customerTotal += $row['subtotal'];
+            $customerTotal += $subtotal;
             $customerItemCount += $row['quantity'];
             
             echo "<tr class='cart-item-row'>";
             echo "<td>
-                    <strong>$customerName</strong><br>
-                    <small class='text-muted'>" . htmlspecialchars($row['customer_email']) . "</small>
-                  </td>";
-            echo "<td>" . htmlspecialchars($row['product_name']) . "</td>";
-            echo "<td>₱" . number_format($row['product_price'], 2) . "</td>";
+                    <strong>$customerName</strong><br>";
+            if (isset($row['customer_email']) && $row['customer_email']) {
+              echo "<small class='text-muted'>" . htmlspecialchars($row['customer_email']) . "</small>";
+            }
+            echo "</td>";
+            echo "<td>" . htmlspecialchars($productName) . "</td>";
+            echo "<td><span class='badge bg-secondary'>" . htmlspecialchars($categoryName) . "</span></td>";
+            echo "<td>₱" . number_format($productPrice, 2) . "</td>";
             echo "<td>
                     <form method='POST' class='d-flex align-items-center gap-2'>
                       <input type='hidden' name='cart_item_id' value='$cartItemId'>
@@ -317,7 +629,7 @@ $statusFilter = $_GET['status'] ?? '';
                       </button>
                     </form>
                   </td>";
-            echo "<td class='fw-bold text-primary'>₱" . number_format($row['subtotal'], 2) . "</td>";
+            echo "<td class='fw-bold text-primary'>₱" . number_format($subtotal, 2) . "</td>";
             echo "<td>" . date("M j, Y", strtotime($row['created_at'])) . "</td>";
             echo "<td>
                     <form method='POST' class='d-inline' onsubmit=\"return confirm('Remove this item from cart?');\">
@@ -333,7 +645,7 @@ $statusFilter = $_GET['status'] ?? '';
           // Show final customer total if there were results
           if ($currentUser != '') {
             echo "<tr class='table-info fw-bold'>
-                    <td colspan='4'>Customer Total</td>
+                    <td colspan='5'>Customer Total</td>
                     <td>₱" . number_format($customerTotal, 2) . "</td>
                     <td>$customerItemCount items</td>
                     <td>
@@ -349,7 +661,7 @@ $statusFilter = $_GET['status'] ?? '';
           
           // Show message if no results
           if ($result->num_rows == 0) {
-            echo "<tr><td colspan='7' class='text-center text-muted py-4'>
+            echo "<tr><td colspan='8' class='text-center text-muted py-4'>
                     <i class='fas fa-shopping-cart fa-3x mb-3'></i><br>
                     No cart items found matching your criteria.
                   </td></tr>";
@@ -360,6 +672,8 @@ $statusFilter = $_GET['status'] ?? '';
       </div>
     </div>
   </div>
+
+  <?php endif; // End check for required tables ?>
 </div>
 
 <!-- Add Item to Cart Modal -->
@@ -372,34 +686,75 @@ $statusFilter = $_GET['status'] ?? '';
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
+          <?php if ($tablesExist['users']): ?>
           <div class="mb-3">
             <label class="form-label">Customer</label>
             <select name="user_id" class="form-select" required>
               <option value="">Select Customer</option>
               <?php
-              // Removed role filter since users table doesn't have role field
-              $customerQuery = $conn->query("SELECT id, name, email FROM users ORDER BY name");
+              $customerQuery = $conn->query("SELECT id, {$userNameField}" . ($userEmailField ? ", {$userEmailField}" : '') . " FROM users ORDER BY {$userNameField}");
               while ($customer = $customerQuery->fetch_assoc()) {
-                echo "<option value='" . $customer['id'] . "'>" . 
-                     htmlspecialchars($customer['name']) . " (" . htmlspecialchars($customer['email']) . ")</option>";
+                $displayName = htmlspecialchars($customer[$userNameField]);
+                if ($userEmailField && !empty($customer[$userEmailField])) {
+                  $displayName .= " (" . htmlspecialchars($customer[$userEmailField]) . ")";
+                }
+                echo "<option value='" . $customer['id'] . "'>" . $displayName . "</option>";
               }
               ?>
             </select>
           </div>
+          <?php else: ?>
+          <div class="mb-3">
+            <div class="alert alert-warning">
+              <i class="fas fa-exclamation-triangle me-2"></i>
+              Users table not found. Please create a users table first.
+            </div>
+            <input type="hidden" name="user_id" value="1">
+          </div>
+          <?php endif; ?>
+
+          <?php if ($tablesExist['categories']): ?>
+          <div class="mb-3">
+            <label class="form-label">Category (Optional)</label>
+            <select name="category_id" class="form-select" id="categorySelect">
+              <option value="">Select Category First</option>
+              <?php
+              $categoryQuery = $conn->query("SELECT id, name FROM categories ORDER BY name");
+              while ($category = $categoryQuery->fetch_assoc()) {
+                echo "<option value='" . $category['id'] . "'>" . htmlspecialchars($category['name']) . "</option>";
+              }
+              ?>
+            </select>
+          </div>
+          <?php endif; ?>
+          
           <div class="mb-3">
             <label class="form-label">Product</label>
-            <select name="product_id" class="form-select" required>
+            <select name="product_id" class="form-select" required id="productSelect">
               <option value="">Select Product</option>
               <?php
-              // Removed status filter since products table doesn't have status field
-              $productQuery = $conn->query("SELECT id, name, price FROM products ORDER BY name");
-              while ($product = $productQuery->fetch_assoc()) {
-                echo "<option value='" . $product['id'] . "'>" . 
-                     htmlspecialchars($product['name']) . " - ₱" . number_format($product['price'], 2) . "</option>";
+              // Show generic products if available
+              if ($tablesExist['products']) {
+                $productQuery = $conn->query("SELECT id, name, price FROM products ORDER BY name");
+                if ($productQuery) {
+                  echo "<optgroup label='Generic Products'>";
+                  while ($product = $productQuery->fetch_assoc()) {
+                    $displayName = htmlspecialchars($product['name']) . " - ₱" . number_format($product['price'], 2);
+                    echo "<option value='" . $product['id'] . "'>" . $displayName . "</option>";
+                  }
+                  echo "</optgroup>";
+                }
               }
               ?>
             </select>
+            <div class="form-text">
+              <small class="text-muted">
+                <i class="fas fa-info-circle me-1"></i>
+                Select a category first to see category-specific products, or choose from generic products above.
+              </small>
+            </div>
           </div>
+          
           <div class="mb-3">
             <label class="form-label">Quantity</label>
             <input type="number" name="quantity" class="form-control" min="1" max="999" value="1" required>
@@ -417,6 +772,206 @@ $statusFilter = $_GET['status'] ?? '';
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<?php $conn->close(); ?>
+<script>
+// Dynamic product loading based on category selection
+document.addEventListener('DOMContentLoaded', function() {
+    const categorySelect = document.getElementById('categorySelect');
+    const productSelect = document.getElementById('productSelect');
+    
+    if (categorySelect && productSelect) {
+        // Store original generic products
+        const originalProducts = productSelect.innerHTML;
+        
+        categorySelect.addEventListener('change', function() {
+            const categoryId = this.value;
+            
+            if (!categoryId) {
+                // Reset to original products
+                productSelect.innerHTML = originalProducts;
+                return;
+            }
+            
+            // Get category name for table lookup
+            const categoryName = this.options[this.selectedIndex].text;
+            
+            // Make AJAX request to get category-specific products
+            fetch('get_category_products.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    category_id: categoryId,
+                    category_name: categoryName
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    let newOptions = '<option value="">Select Product</option>';
+                    
+                    // Add generic products first
+                    if (originalProducts.includes('<optgroup')) {
+                        const genericMatch = originalProducts.match(/<optgroup label='Generic Products'>(.*?)<\/optgroup>/s);
+                        if (genericMatch) {
+                            newOptions += '<optgroup label="Generic Products">' + genericMatch[1] + '</optgroup>';
+                        }
+                    } else {
+                        // If no optgroups, add all original options
+                        const genericOptions = originalProducts.match(/<option value="[^"]*"[^>]*>[^<]*<\/option>/g);
+                        if (genericOptions && genericOptions.length > 1) { // Skip the first "Select Product" option
+                            newOptions += '<optgroup label="Generic Products">';
+                            genericOptions.slice(1).forEach(option => newOptions += option);
+                            newOptions += '</optgroup>';
+                        }
+                    }
+                    
+                    // Add category-specific products
+                    if (data.products && data.products.length > 0) {
+                        newOptions += `<optgroup label="${categoryName} Products">`;
+                        data.products.forEach(product => {
+                            newOptions += `<option value="${product.id}" data-category="${categoryId}">${product.name} - ₱${parseFloat(product.price).toFixed(2)}</option>`;
+                        });
+                        newOptions += '</optgroup>';
+                    }
+                    
+                    productSelect.innerHTML = newOptions;
+                } else {
+                    console.error('Failed to load products:', data.message);
+                    // Reset to original on error
+                    productSelect.innerHTML = originalProducts;
+                }
+            })
+            .catch(error => {
+                console.error('Error loading products:', error);
+                // Reset to original on error
+                productSelect.innerHTML = originalProducts;
+            });
+        });
+        
+        // Add category_id to form when submitting if a category-specific product is selected
+        const form = productSelect.closest('form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                const selectedOption = productSelect.options[productSelect.selectedIndex];
+                if (selectedOption && selectedOption.dataset.category) {
+                    // Create hidden input for category_id if it doesn't exist
+                    let categoryInput = form.querySelector('input[name="category_id"]');
+                    if (!categoryInput) {
+                        categoryInput = document.createElement('input');
+                        categoryInput.type = 'hidden';
+                        categoryInput.name = 'category_id';
+                        form.appendChild(categoryInput);
+                    }
+                    categoryInput.value = selectedOption.dataset.category;
+                }
+            });
+        }
+    }
+});
+
+// Form validation and user feedback
+document.addEventListener('submit', function(e) {
+    if (e.target.matches('form[method="POST"]')) {
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Processing...';
+            
+            // Re-enable after 10 seconds as fallback
+            setTimeout(() => {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }, 10000);
+        }
+    }
+});
+
+// Auto-dismiss alerts after 5 seconds
+document.addEventListener('DOMContentLoaded', function() {
+    const alerts = document.querySelectorAll('.alert-dismissible');
+    alerts.forEach(alert => {
+        setTimeout(() => {
+            const bsAlert = new bootstrap.Alert(alert);
+            bsAlert.close();
+        }, 5000);
+    });
+});
+</script>
+
+<?php 
+// Create the helper file for AJAX product loading
+$helperFile = __DIR__ . '/get_category_products.php';
+if (!file_exists($helperFile)) {
+    $helperContent = '<?php
+include __DIR__ . "/../includes/db.php";
+
+header("Content-Type: application/json");
+
+if ($_SERVER["REQUEST_METHOD"] !== "POST") {
+    echo json_encode(["success" => false, "message" => "Invalid request method"]);
+    exit;
+}
+
+$input = json_decode(file_get_contents("php://input"), true);
+$categoryId = $input["category_id"] ?? null;
+$categoryName = $input["category_name"] ?? null;
+
+if (!$categoryId || !$categoryName) {
+    echo json_encode(["success" => false, "message" => "Missing required parameters"]);
+    exit;
+}
+
+// Function to get table and id field from category name
+function getCategoryTableInfo($categoryName) {
+    $safeName = strtolower(preg_replace("/[^a-zA-Z0-9_]/", "_", $categoryName));
+    $tableName = $safeName . "_products";
+    $idField = $safeName . "_id";
+    return [$tableName, $idField];
+}
+
+try {
+    list($tableName, $idField) = getCategoryTableInfo($categoryName);
+    
+    // Check if the category table exists
+    $checkTable = $conn->query("SHOW TABLES LIKE \"$tableName\"");
+    if ($checkTable->num_rows === 0) {
+        echo json_encode(["success" => true, "products" => [], "message" => "No category-specific table found"]);
+        exit;
+    }
+    
+    // Get products from category table
+    $query = $conn->prepare("SELECT `$idField` as id, name, price FROM `$tableName` ORDER BY name");
+    if (!$query) {
+        throw new Exception("Failed to prepare query: " . $conn->error);
+    }
+    
+    $query->execute();
+    $result = $query->get_result();
+    
+    $products = [];
+    while ($row = $result->fetch_assoc()) {
+        $products[] = [
+            "id" => $row["id"],
+            "name" => $row["name"],
+            "price" => $row["price"]
+        ];
+    }
+    
+    echo json_encode(["success" => true, "products" => $products]);
+    
+} catch (Exception $e) {
+    echo json_encode(["success" => false, "message" => "Error: " . $e->getMessage()]);
+}
+
+$conn->close();
+?>';
+    
+    file_put_contents($helperFile, $helperContent);
+}
+
+$conn->close(); 
+?>
 </body>
 </html>
