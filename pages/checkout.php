@@ -211,19 +211,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_checkout'])) 
             $stmt->execute();
             $order_id = $stmt->insert_id;
 
-            // Insert order items and update stock
+            // Insert order items (do NOT update stock here)
             $insert_items = $conn->prepare("INSERT INTO order_item (order_id, category_id, product_id, quantity, price) VALUES (?, ?, ?, ?, ?)");
 
             foreach ($valid_items as $item) {
-                // Insert order item
                 $insert_items->bind_param("iiiid", $order_id, $item['category_id'], $item['product_id'], $item['quantity'], $item['price']);
                 $insert_items->execute();
-
-                // Update stock
-                if (!updateProductStock($conn, $item['category_id'], $item['product_id'], $item['quantity'])) {
-                    throw new Exception("Failed to update stock for '" . $item['name'] . "'");
-                }
             }
+            // Stock will be updated only when order is marked as successful/paid.
 
             $conn->commit();
 

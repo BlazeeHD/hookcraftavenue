@@ -28,6 +28,76 @@ function generateSecureFilename($originalName) {
     return uniqid('payment_', true) . '.' . $extension;
 }
 
+// Fixed function to update product stock
+function updateProductStock($conn, $product_id, $quantity, $operation = 'deduct') {
+    try {
+        if ($operation === 'deduct') {
+            // Deduct stock when order becomes successful
+            $stmt = $conn->prepare("UPDATE products SET stock = stock - ? WHERE id = ? AND stock >= ?");
+            $stmt->bind_param("iii", $quantity, $product_id, $quantity);
+        } else if ($operation === 'restore') {
+            // Restore stock when order is cancelled or becomes unsuccessful
+            $stmt = $conn->prepare("UPDATE products SET stock = stock + ? WHERE id = ?");
+            $stmt->bind_param("ii", $quantity, $product_id);
+        } else {
+            return false;
+        }
+        
+        if ($stmt->execute()) {
+            $affected = $stmt->affected_rows;
+            $stmt->close();
+            return $affected > 0;
+        }
+        
+        $stmt->close();
+        return false;
+    } catch (Exception $e) {
+        error_log("Error updating stock: " . $e->getMessage());
+        return false;
+    }
+}
+
+// Function to handle stock changes when order status changes
+function handleStockUpdate($conn, $orderId, $oldStatus, $newStatus) {
+    // Get all items for this order
+    $itemsQuery = "SELECT product_id, quantity FROM order_item WHERE order_id = ?";
+    $itemsStmt = $conn->prepare($itemsQuery);
+    
+    if (!$itemsStmt) {
+        return false;
+    }
+    
+    $itemsStmt->bind_param("i", $orderId);
+    $itemsStmt->execute();
+    $itemsResult = $itemsStmt->get_result();
+    
+    $success = true;
+    
+    while ($item = $itemsResult->fetch_assoc()) {
+        $product_id = $item['product_id'];
+        $quantity = $item['quantity'];
+        
+        // Logic for stock updates based on status changes
+        if ($oldStatus !== 'Successful' && $newStatus === 'Successful') {
+            // Order becoming successful - deduct stock
+            if (!updateProductStock($conn, $product_id, $quantity, 'deduct')) {
+                $success = false;
+                error_log("Failed to deduct stock for product $product_id, quantity $quantity");
+            }
+        } else if ($oldStatus === 'Successful' && $newStatus !== 'Successful') {
+            // Order was successful but now isn't - restore stock
+            if (!updateProductStock($conn, $product_id, $quantity, 'restore')) {
+                $success = false;
+                error_log("Failed to restore stock for product $product_id, quantity $quantity");
+            }
+        }
+        // If order stays pending or unsuccessful, no stock changes needed
+    }
+    
+    $itemsStmt->close();
+    return $success;
+}
+
 // Simplified function to get products for an order using the unified products table
 function getOrderProducts($conn, $orderId) {
     // Check if order_item table exists
@@ -78,6 +148,15 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['order_id']) && isset(
         $message = 'Invalid order ID';
         $messageType = 'danger';
     } else {
+        // Get current status before updating
+        $statusQuery = "SELECT payment_status FROM orders WHERE id = ?";
+        $statusStmt = $conn->prepare($statusQuery);
+        $statusStmt->bind_param("i", $orderId);
+        $statusStmt->execute();
+        $statusResult = $statusStmt->get_result();
+        $currentOrder = $statusResult->fetch_assoc();
+        $oldStatus = $currentOrder['payment_status'] ?? 'Pending';
+        
         $validation = validateFile($_FILES["payment_proof"]);
         
         if ($validation['success']) {
@@ -92,8 +171,14 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['order_id']) && isset(
                 $stmt->bind_param("si", $filename, $orderId);
                 
                 if ($stmt->execute()) {
-                    $message = 'Payment proof uploaded successfully!';
-                    $messageType = 'success';
+                    // Handle stock update since status changed from old status to 'Successful'
+                    if (handleStockUpdate($conn, $orderId, $oldStatus, 'Successful')) {
+                        $message = 'Payment proof uploaded successfully and stock updated!';
+                        $messageType = 'success';
+                    } else {
+                        $message = 'Payment proof uploaded but stock update failed. Please check manually.';
+                        $messageType = 'warning';
+                    }
                 } else {
                     $message = 'Database update failed: ' . $stmt->error;
                     $messageType = 'danger';
@@ -115,12 +200,27 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['mark_unsuccessful']))
     $orderId = filter_var($_POST['order_id'], FILTER_VALIDATE_INT);
     
     if ($orderId !== false) {
+        // Get current status before updating
+        $statusQuery = "SELECT payment_status FROM orders WHERE id = ?";
+        $statusStmt = $conn->prepare($statusQuery);
+        $statusStmt->bind_param("i", $orderId);
+        $statusStmt->execute();
+        $statusResult = $statusStmt->get_result();
+        $currentOrder = $statusResult->fetch_assoc();
+        $oldStatus = $currentOrder['payment_status'] ?? 'Pending';
+        
         $stmt = $conn->prepare("UPDATE orders SET payment_status = 'Unsuccessful' WHERE id = ?");
         $stmt->bind_param("i", $orderId);
         
         if ($stmt->execute()) {
-            $message = 'Order marked as unsuccessful';
-            $messageType = 'warning';
+            // Handle stock update since status changed
+            if (handleStockUpdate($conn, $orderId, $oldStatus, 'Unsuccessful')) {
+                $message = 'Order marked as unsuccessful and stock restored if needed';
+                $messageType = 'warning';
+            } else {
+                $message = 'Order marked as unsuccessful';
+                $messageType = 'warning';
+            }
         } else {
             $message = 'Error updating order: ' . $stmt->error;
             $messageType = 'danger';
@@ -134,6 +234,15 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['edit_status'])) {
     $newStatus = filter_var($_POST['new_status'], FILTER_SANITIZE_STRING);
     
     if ($orderId !== false && in_array($newStatus, ['Pending', 'Successful', 'Unsuccessful'])) {
+        // Get current status before updating
+        $statusQuery = "SELECT payment_status FROM orders WHERE id = ?";
+        $statusStmt = $conn->prepare($statusQuery);
+        $statusStmt->bind_param("i", $orderId);
+        $statusStmt->execute();
+        $statusResult = $statusStmt->get_result();
+        $currentOrder = $statusResult->fetch_assoc();
+        $oldStatus = $currentOrder['payment_status'] ?? 'Pending';
+        
         $updateQuery = "UPDATE orders SET payment_status = ?";
         $params = [$newStatus];
         $types = "s";
@@ -163,8 +272,14 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['edit_status'])) {
             $stmt->bind_param($types, ...$params);
             
             if ($stmt->execute()) {
-                $message = 'Order updated successfully!';
-                $messageType = 'success';
+                // Handle stock update based on status change
+                if (handleStockUpdate($conn, $orderId, $oldStatus, $newStatus)) {
+                    $message = 'Order updated successfully and stock adjusted!';
+                    $messageType = 'success';
+                } else {
+                    $message = 'Order updated successfully but stock adjustment may have failed. Please check manually.';
+                    $messageType = 'warning';
+                }
             } else {
                 $message = 'Error updating order: ' . $stmt->error;
                 $messageType = 'danger';
@@ -478,6 +593,14 @@ $offset = ($page - 1) * $limit;
             border-radius: 15px;
         }
 
+        .stock-info {
+            background: rgba(52, 152, 219, 0.1);
+            border-left: 4px solid #3498db;
+            padding: 0.75rem 1rem;
+            margin: 1rem 0;
+            border-radius: 0 8px 8px 0;
+        }
+
         @media (max-width: 768px) {
             .action-buttons {
                 flex-direction: column;
@@ -503,6 +626,15 @@ $offset = ($page - 1) * $limit;
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     <?php endif; ?>
+
+    <!-- Stock Management Info -->
+    <div class="stock-info">
+        <h6><i class="fas fa-info-circle me-2"></i>Stock Management Rules</h6>
+        <p class="mb-0">
+            <strong>Successful Orders:</strong> Stock is automatically deducted when order status changes to "Successful" <br>
+            <strong>Pending/Unsuccessful Orders:</strong> No stock deduction. Stock is restored if previously successful order becomes unsuccessful.
+        </p>
+    </div>
 
     <!-- Quick Stats -->
     <div class="row mb-4">
@@ -904,7 +1036,7 @@ $offset = ($page - 1) * $limit;
                     <div class="form-text">Supported formats: JPG, PNG, GIF, WebP. Max size: 5MB</div>
                 </div>
                 <div class="alert alert-info">
-                    <i class="fas fa-info-circle me-2"></i>Uploading proof will automatically mark this order as <strong>Successful</strong>.
+                    <i class="fas fa-info-circle me-2"></i>Uploading proof will automatically mark this order as <strong>Successful</strong> and <strong>deduct stock</strong>.
                 </div>
             </form>
         `;
@@ -948,17 +1080,21 @@ $offset = ($page - 1) * $limit;
             `;
         }
         
-        // Set body content
+        // Set body content with stock warning
         modalBody.innerHTML = `
             <form method="POST" enctype="multipart/form-data" id="editForm">
                 <input type="hidden" name="order_id" value="${orderId}">
                 <div class="mb-3">
                     <label class="form-label fw-bold">Payment Status</label>
-                    <select name="new_status" class="form-select" required>
+                    <select name="new_status" class="form-select" required onchange="showStockWarning(this.value, '${currentStatus}')">
                         <option value="Pending" ${currentStatus === 'Pending' ? 'selected' : ''}>Pending</option>
                         <option value="Successful" ${currentStatus === 'Successful' ? 'selected' : ''}>Successful</option>
                         <option value="Unsuccessful" ${currentStatus === 'Unsuccessful' ? 'selected' : ''}>Unsuccessful</option>
                     </select>
+                </div>
+                <div id="stockWarning" class="alert alert-warning" style="display: none;">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <span id="stockWarningText"></span>
                 </div>
                 <div class="mb-3">
                     <label class="form-label fw-bold">Replace Payment Proof (Optional)</label>
@@ -1013,6 +1149,23 @@ $offset = ($page - 1) * $limit;
         // Show modal
         const bootstrapModal = new bootstrap.Modal(modal);
         bootstrapModal.show();
+    }
+    
+    function showStockWarning(newStatus, currentStatus) {
+        const warningDiv = document.getElementById('stockWarning');
+        const warningText = document.getElementById('stockWarningText');
+        
+        if (currentStatus !== 'Successful' && newStatus === 'Successful') {
+            warningText.textContent = 'Changing status to Successful will DEDUCT stock for all items in this order.';
+            warningDiv.style.display = 'block';
+            warningDiv.className = 'alert alert-warning';
+        } else if (currentStatus === 'Successful' && newStatus !== 'Successful') {
+            warningText.textContent = 'Changing status from Successful will RESTORE stock for all items in this order.';
+            warningDiv.style.display = 'block';
+            warningDiv.className = 'alert alert-info';
+        } else {
+            warningDiv.style.display = 'none';
+        }
     }
     
     function submitUploadForm() {
@@ -1124,7 +1277,7 @@ $offset = ($page - 1) * $limit;
         // Better confirmation handling
         document.addEventListener('click', function(e) {
             if (e.target.matches('button[name="mark_unsuccessful"]')) {
-                if (!confirm('⚠️ Are you sure you want to mark this order as UNSUCCESSFUL?\n\nThis action will update the order status and cannot be easily undone.')) {
+                if (!confirm('⚠️ Are you sure you want to mark this order as UNSUCCESSFUL?\n\nThis action will update the order status. If the order was previously successful, stock will be restored.')) {
                     e.preventDefault();
                     e.stopPropagation();
                     return false;
@@ -1152,11 +1305,6 @@ $offset = ($page - 1) * $limit;
             console.log('Modal shown:', e.target.id);
             // Ensure form elements are focusable
             const modal = e.target;
-            const inputs = modal.querySelectorAll('input, select, button');
-            inputs.forEach(input => {
-                input.style.pointerEvents = 'auto';
-                input.style.zIndex = '1';
-            });
         });
 
         document.addEventListener('hidden.bs.modal', function(e) {
