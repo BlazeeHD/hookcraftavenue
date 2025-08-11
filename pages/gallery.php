@@ -5,10 +5,17 @@ include('signup_modal.php'); // Modal UI only
 if (!isset($_SESSION['cart'])) {
   $_SESSION['cart'] = [];
 }
-$cart_count = count($_SESSION['cart']);
+
 
 // User session logic
-$cart_count = array_sum($_SESSION['cart']);
+$cart_count = 0;
+if (isset($_SESSION['cart']) && is_array($_SESSION['cart'])) {
+    foreach ($_SESSION['cart'] as $item) {
+        if (is_array($item) && isset($item['quantity'])) {
+            $cart_count += $item['quantity'];
+        }
+    }
+}
 $isLoggedIn = isset($_SESSION['user_id']);
 $userName = $isLoggedIn ? $_SESSION['user_name'] : '';
 ?>

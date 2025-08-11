@@ -5,16 +5,26 @@ if (session_status() === PHP_SESSION_NONE) {
 
 // Initialize cart if not set
 if (!isset($_SESSION['cart'])) {
-  $_SESSION['cart'] = [];
+    $_SESSION['cart'] = [];
 }
-$cart_count = array_sum($_SESSION['cart']);
+
+// Correct cart count calculation
+$cart_count = 0;
+if (isset($_SESSION['cart']) && is_array($_SESSION['cart'])) {
+    foreach ($_SESSION['cart'] as $item) {
+        if (is_array($item) && isset($item['quantity'])) {
+            $cart_count += (int)$item['quantity'];
+        }
+    }
+}
+
 
 // Check if user is logged in
 $isLoggedIn = isset($_SESSION['user_id']);
 $userName = $isLoggedIn ? $_SESSION['user_name'] : '';
 
 
-$cart_count = array_sum($_SESSION['cart']);
+
 ?>
 <!DOCTYPE html>
 <html lang="en">

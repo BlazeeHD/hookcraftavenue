@@ -5,10 +5,15 @@ if (session_status() === PHP_SESSION_NONE) {
 include('pages/login_modal.php');
 include('pages/signup_modal.php');
 
-if (!isset($_SESSION['cart'])) {
-  $_SESSION['cart'] = [];
+$cart_count = 0;
+if (isset($_SESSION['cart']) && is_array($_SESSION['cart'])) {
+    foreach ($_SESSION['cart'] as $item) {
+        if (is_array($item) && isset($item['quantity'])) {
+            $cart_count += $item['quantity'];
+        }
+    }
 }
-$cart_count = array_sum($_SESSION['cart']);
+
 $isLoggedIn = isset($_SESSION['user_id']);
 $userName = $_SESSION['user_name'] ?? '';
 ?>

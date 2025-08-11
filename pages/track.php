@@ -19,6 +19,16 @@ $user_name = $user ? htmlspecialchars($user['name']) : "Guest";
 $isLoggedIn = isset($_SESSION['user_id']);
 $userName = $user_name;
 $userProfilePic = $userProfilePic ?? '../asset/images/default-profile.png';
+
+// Correct cart count calculation
+$cart_count = 0;
+if (isset($_SESSION['cart']) && is_array($_SESSION['cart'])) {
+    foreach ($_SESSION['cart'] as $item) {
+        if (is_array($item) && isset($item['quantity'])) {
+            $cart_count += $item['quantity'];
+        }
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
