@@ -80,18 +80,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['product_id']) && isse
     exit;
 }
 
-// Calculate cart count for display
+$isLoggedIn = isset($_SESSION['user_id']);
+$userName = $_SESSION['user_name'] ?? '';
+
+// Cart count logic: show count only if user is logged in
 $cart_count = 0;
-if (isset($_SESSION['cart']) && is_array($_SESSION['cart'])) {
+if ($isLoggedIn && isset($_SESSION['cart']) && is_array($_SESSION['cart'])) {
     foreach ($_SESSION['cart'] as $item) {
         if (is_array($item) && isset($item['quantity'])) {
-            $cart_count += $item['quantity'];
+            $cart_count += (int)$item['quantity'];
         }
     }
 }
-
-$isLoggedIn = isset($_SESSION['user_id']);
-$userName = $_SESSION['user_name'] ?? '';
 
 // Load all categories
 $categories = [];
@@ -221,7 +221,7 @@ if ($catQuery) {
         <!-- Cart -->
         <li class="nav-item me-3">
           <?php if ($isLoggedIn): ?>
-            <a class="nav-link position-relative" href="../pages/cart.php">
+            <a class="nav-link position-relative" href="cart.php">
           <?php else: ?>
             <a class="nav-link position-relative" href="#" data-bs-toggle="modal" data-bs-target="#loginModal">
           <?php endif; ?>
@@ -244,8 +244,8 @@ if ($catQuery) {
               </li>
               <li class="fw-bold"><?php echo htmlspecialchars($userName); ?></li>
               <li><hr class="dropdown-divider"></li>
-              <li><a class="dropdown-item" href="../pages/profile.php"><i class="bi bi-person-circle me-2"></i> Profile</a></li>
-              <li><a class="dropdown-item text-danger" href="../pages/logout.php"><i class="bi bi-box-arrow-right me-2"></i> Logout</a></li>
+              <li><a class="dropdown-item" href="profile.php"><i class="bi bi-person-circle me-2"></i> Profile</a></li>
+              <li><a class="dropdown-item text-danger" href="logout.php"><i class="bi bi-box-arrow-right me-2"></i> Logout</a></li>
             </ul>
           </li>
         <?php else: ?>
@@ -416,7 +416,7 @@ if ($catQuery) {
   </div>
 </footer>
 
-<?php include('../pages/login_modal.php'); ?>
+<?php include('login_modal.php'); ?>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
 <script>

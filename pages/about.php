@@ -8,23 +8,19 @@ if (!isset($_SESSION['cart'])) {
     $_SESSION['cart'] = [];
 }
 
-// Correct cart count calculation
+// Check if user is logged in
+$isLoggedIn = isset($_SESSION['user_id']);
+$userName = $isLoggedIn ? $_SESSION['user_name'] : '';
+
+// Cart count logic: show count only if user is logged in
 $cart_count = 0;
-if (isset($_SESSION['cart']) && is_array($_SESSION['cart'])) {
+if ($isLoggedIn && isset($_SESSION['cart']) && is_array($_SESSION['cart'])) {
     foreach ($_SESSION['cart'] as $item) {
         if (is_array($item) && isset($item['quantity'])) {
             $cart_count += (int)$item['quantity'];
         }
     }
 }
-
-
-// Check if user is logged in
-$isLoggedIn = isset($_SESSION['user_id']);
-$userName = $isLoggedIn ? $_SESSION['user_name'] : '';
-
-
-
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -60,9 +56,9 @@ $userName = $isLoggedIn ? $_SESSION['user_name'] : '';
     <div class="collapse navbar-collapse" id="navbarContent">
       <!-- Center links -->
       <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
-        <li class="nav-item"><a class="nav-link active" href="../index.php">Home</a></li>
+        <li class="nav-item"><a class="nav-link" href="../index.php">Home</a></li>
         <li class="nav-item"><a class="nav-link" href="shop.php">Shop</a></li>
-        <li class="nav-item"><a class="nav-link" href="about.php">About</a></li>
+        <li class="nav-item"><a class="nav-link active" href="about.php">About</a></li>
         <li class="nav-item"><a class="nav-link" href="gallery.php">Gallery</a></li>
         <li class="nav-item"><a class="nav-link" href="#">Contact</a></li>
       </ul>
@@ -79,13 +75,13 @@ $userName = $isLoggedIn ? $_SESSION['user_name'] : '';
         <!-- Cart -->
         <li class="nav-item me-3">
           <?php if ($isLoggedIn): ?>
-            <a class="nav-link position-relative" href="../pages/cart.php">
+            <a class="nav-link position-relative" href="cart.php">
           <?php else: ?>
             <a class="nav-link position-relative" href="#" data-bs-toggle="modal" data-bs-target="#loginModal">
           <?php endif; ?>
               <i class="bi bi-cart fs-5"></i>
               <span id="cart-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                <?php echo isset($cart_count) ? $cart_count : 0; ?>
+                <?php echo $cart_count; ?>
               </span>
             </a>
         </li>
@@ -94,16 +90,16 @@ $userName = $isLoggedIn ? $_SESSION['user_name'] : '';
         <?php if ($isLoggedIn): ?>
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle p-0 border-0 bg-transparent" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-              <img src="<?php echo $userProfilePic ?? 'asset/images/default-profile.png'; ?>" alt="Profile" width="35" height="35" class="rounded-circle" style="object-fit: cover;">
+              <img src="<?php echo $userProfilePic ?? '../asset/images/default-profile.png'; ?>" alt="Profile" width="35" height="35" class="rounded-circle" style="object-fit: cover;">
             </a>
             <ul class="dropdown-menu dropdown-menu-end mt-2 p-3 text-center" aria-labelledby="userDropdown" style="min-width: 220px;">
               <li class="mb-2">
-                <img src="<?php echo $userProfilePic ?? 'asset/images/default-profile.png'; ?>" alt="Profile" width="60" height="60" class="rounded-circle shadow" style="object-fit: cover;">
+                <img src="<?php echo $userProfilePic ?? '../asset/images/default-profile.png'; ?>" alt="Profile" width="60" height="60" class="rounded-circle shadow" style="object-fit: cover;">
               </li>
               <li class="fw-bold"><?php echo htmlspecialchars($userName); ?></li>
               <li><hr class="dropdown-divider"></li>
-              <li><a class="dropdown-item" href="../pages/profile.php"><i class="bi bi-person-circle me-2"></i> Profile</a></li>
-              <li><a class="dropdown-item text-danger" href="pages/logout.php"><i class="bi bi-box-arrow-right me-2"></i> Logout</a></li>
+              <li><a class="dropdown-item" href="profile.php"><i class="bi bi-person-circle me-2"></i> Profile</a></li>
+              <li><a class="dropdown-item text-danger" href="logout.php"><i class="bi bi-box-arrow-right me-2"></i> Logout</a></li>
             </ul>
           </li>
         <?php else: ?>
@@ -157,7 +153,7 @@ $userName = $isLoggedIn ? $_SESSION['user_name'] : '';
       <h2>What we do?</h2>
       <p>
         We provide handcrafted bouquets and creative gift items for all kinds of celebrations.
-        Whether it’s a birthday, anniversary, graduation, or just a sweet gesture—our blooms bring joy.
+        Whether it's a birthday, anniversary, graduation, or just a sweet gesture—our blooms bring joy.
       </p>
     </div>
   </section>

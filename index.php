@@ -5,17 +5,18 @@ if (session_status() === PHP_SESSION_NONE) {
 include('pages/login_modal.php');
 include('pages/signup_modal.php');
 
+$isLoggedIn = isset($_SESSION['user_id']);
+$userName = $_SESSION['user_name'] ?? '';
+
+// Cart count logic: show count only if user is logged in
 $cart_count = 0;
-if (isset($_SESSION['cart']) && is_array($_SESSION['cart'])) {
+if ($isLoggedIn && isset($_SESSION['cart']) && is_array($_SESSION['cart'])) {
     foreach ($_SESSION['cart'] as $item) {
         if (is_array($item) && isset($item['quantity'])) {
             $cart_count += $item['quantity'];
         }
     }
 }
-
-$isLoggedIn = isset($_SESSION['user_id']);
-$userName = $_SESSION['user_name'] ?? '';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -75,7 +76,7 @@ $userName = $_SESSION['user_name'] ?? '';
           <?php endif; ?>
               <i class="bi bi-cart fs-5"></i>
               <span id="cart-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                <?php echo isset($cart_count) ? $cart_count : 0; ?>
+                <?php echo $cart_count; ?>
               </span>
             </a>
         </li>
