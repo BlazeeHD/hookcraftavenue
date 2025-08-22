@@ -148,7 +148,7 @@ if ($catQuery) {
       padding: 15px;
     }
     .product-price {
-      color: #d63384;
+      color: black;
       font-weight: bold;
       font-size: 1.2em;
     }
